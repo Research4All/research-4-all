@@ -63,4 +63,4 @@ router.post('/api/auth/logout', (req: any, res: any) => {
     })
 })
 
-module.exports = router;
+export { router as authRouter };

@@ -1,12 +1,12 @@
 import dotenv from "dotenv";
 import express, { Request, Response, Application } from "express";
-const session = require("express-session");
+import session from "express-session";
 
 dotenv.config();
 const PORT: number = Number(process.env.PORT) || 5000;
 
 // Import routes
-const authRouter = require("./routes/auth");
+import { authRouter } from "./routes/auth";
 
 const app: Application = express();
 app.use(express.json());
