@@ -1,5 +1,6 @@
-const router = require('express').Router();
-const { hashPassword, verifyPassword } = require('./argon');
+import { Router } from 'express';
+import { hashPassword, verifyPassword } from './argon';
+const router = Router();
 
 // #TODO: Move user interface to a separate file and import once the project structure is finalized.
 interface User {
