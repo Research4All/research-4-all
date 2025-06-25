@@ -6,7 +6,7 @@ dotenv.config();
 const PORT: number = Number(process.env.PORT) || 5000;
 
 // Import routes
-import { authRouter } from "./routes/auth";
+import authRouter from "./routes/auth";
 
 const app: Application = express();
 app.use(express.json());
@@ -24,7 +24,7 @@ let sessionConfig = {
 }
 
 app.use(session(sessionConfig));
-app.use(authRouter);
+app.use('/api/auth', authRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello, World!");

@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, Request, Response } from 'express';
 import { hashPassword, verifyPassword } from './argon';
 const router = Router();
 
@@ -11,7 +11,7 @@ interface User {
 
 let users: User[] = []
 
-router.post('/api/auth/register', async (req: any, res: any) => {
+router.post('/register', async (req: any, res: any) => {
     const { username, email, password: plainPassword } = req.body
     if (!username || !email || !plainPassword) {
         return res.status(400).json({ error: 'Username, email, and password are required.' });
@@ -32,7 +32,7 @@ router.post('/api/auth/register', async (req: any, res: any) => {
     }
 })
 
-router.post('/api/auth/login', async (req: any, res: any) => {
+router.post('/login', async (req: any, res: any) => {
     const { username, password: plainPassword } = req.body
     if (!username || !plainPassword) {
         return res.status(400).json({ error: 'Username and password are required.' });
@@ -51,7 +51,7 @@ router.post('/api/auth/login', async (req: any, res: any) => {
     }
 })
 
-router.post('/api/auth/logout', (req: any, res: any) => {
+router.post('/logout', (req: any, res: any) => {
     req.session.destroy((err: any) => {
         if (err) {
             console.error('Error destroying session:', err);
@@ -63,4 +63,4 @@ router.post('/api/auth/logout', (req: any, res: any) => {
     })
 })
 
-export { router as authRouter };
+export default router;
