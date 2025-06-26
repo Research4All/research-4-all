@@ -1,9 +1,13 @@
 import dotenv from "dotenv";
 import express, { Request, Response, Application } from "express";
 import session from "express-session";
+import connectDB from "./db/database";
 
 dotenv.config();
 const PORT: number = Number(process.env.PORT) || 5000;
+
+// Connect to the database
+connectDB();
 
 // Import routes
 import authRouter from "./routes/auth";
