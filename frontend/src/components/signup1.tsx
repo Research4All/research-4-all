@@ -1,6 +1,8 @@
 import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router";
+
 
 interface Signup1Props {
   heading?: string;
@@ -27,9 +29,10 @@ const Signup1 = ({
   googleText = "Sign up with Google",
   signupText = "Create an account",
   loginText = "Already have an account?",
-  loginUrl = "#",
+  loginUrl = "/login",
 }: Signup1Props) => {
-  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const navigate = useNavigate();
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const username = formData.get("username") as string;
@@ -39,21 +42,24 @@ const Signup1 = ({
     // Handle form submission logic here
     const registerUser = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/auth/register`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            username,
-            email,
-            password,
-          }),
-        });
+        const response = await fetch(
+          `http://localhost:3000/api/auth/register`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username,
+              email,
+              password,
+            }),
+          }
+        );
         const parsedResponse = await response.json();
         if (response.ok) {
           console.log("User registered successfully:", parsedResponse);
-          // Redirect to login or home page
+          navigate("/login");
         }
       } catch (error) {
         console.error("Error registering user:", error);
@@ -80,7 +86,7 @@ const Signup1 = ({
             {heading && <h1 className="text-3xl font-semibold">{heading}</h1>}
           </div>
           <div className="flex w-full flex-col gap-8">
-            <form onSubmit={onSubmit} className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Input
                   type="text"
@@ -122,7 +128,7 @@ const Signup1 = ({
           <div className="flex justify-center gap-1 text-sm text-muted-foreground">
             <p>{loginText}</p>
             <a
-              href={loginUrl}
+              onClick={() => navigate(loginUrl)}
               className="font-medium text-primary hover:underline"
             >
               Login
