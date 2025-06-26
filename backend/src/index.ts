@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import cors from "cors";
 import express, { Request, Response, Application } from "express";
 import session from "express-session";
 import connectDB from "./db/database";
@@ -13,6 +14,7 @@ connectDB();
 import authRouter from "./routes/auth";
 
 const app: Application = express();
+app.use(cors());
 app.use(express.json());
 
 let sessionConfig = {
