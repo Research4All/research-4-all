@@ -1,15 +1,8 @@
-import { Router, Request, Response } from 'express';
+import { Router } from 'express';
 import { hashPassword, verifyPassword } from './argon';
+import User from '../models/User';
+
 const router = Router();
-
-// #TODO: Move user interface to a separate file and import once the project structure is finalized.
-interface User {
-  username: string;
-  email: string;
-  encryptedPassword: string;
-}
-
-let users: User[] = []
 
 router.post('/register', async (req: any, res: any) => {
     const { username, email, password: plainPassword } = req.body
@@ -17,13 +10,15 @@ router.post('/register', async (req: any, res: any) => {
         return res.status(400).json({ error: 'Username, email, and password are required.' });
     }
     try {
-        if (users.find(user => user.username === username)) {
+        if (await User.findOne( { username })) {
             return res.status(400).json({ error: 'Username already exists.' });
-        } else if (users.find(user => user.email === email)) {
+        } else if (await User.findOne( { email })) {
             return res.status(400).json({ error: 'Email already exists.' });
         } else {
             const encryptedPassword = await hashPassword(plainPassword);
-            users.push({ username, email, encryptedPassword });
+            const newUser = new User({ username, email, encryptedPassword });
+            await newUser.save();
+            req.session.user = newUser._id; // Store user in session
             return res.status(201).json({ message: 'User registered successfully.' });
         }
     } catch (err) {
@@ -33,16 +28,16 @@ router.post('/register', async (req: any, res: any) => {
 })
 
 router.post('/login', async (req: any, res: any) => {
-    const { username, password: plainPassword } = req.body
-    if (!username || !plainPassword) {
-        return res.status(400).json({ error: 'Username and password are required.' });
+    const { email, password: plainPassword } = req.body
+    if (!email || !plainPassword) {
+        return res.status(400).json({ error: 'Email and password are required.' });
     }
     try {
-        const user: User | undefined = users.find(u => u.username === username);
+        const user = await User.findOne({ email });
         if (!user || !(await verifyPassword(plainPassword, user.encryptedPassword))) {
-            return res.status(400).json({ error: 'Invalid username or password.' });
+            return res.status(400).json({ error: 'Invalid email or password.' });
         } else {
-            req.session.user = user;
+            req.session.user = user._id;
             return res.json({ message: 'Login successful.' });
         }
     } catch (err) {
