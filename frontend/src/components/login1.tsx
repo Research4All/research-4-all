@@ -1,7 +1,7 @@
 import { FcGoogle } from "react-icons/fc";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useNavigate } from "react-router";
 
 interface Login1Props {
   heading?: string;
@@ -26,10 +26,41 @@ const Login1 = ({
     title: "shadcnblocks.com",
   },
   buttonText = "Login",
-  googleText = "Sign up with Google",
+  googleText = "Log in with Google",
   signupText = "Don't have an account?",
-  signupUrl = "https://shadcnblocks.com",
+  signupUrl = "/signup",
 }: Login1Props) => {
+  const navigate = useNavigate();
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    // Handle form submission logic here
+    const loginUser = async () => {
+      try {
+        const response = await fetch(`http://localhost:3000/api/auth/login`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email,
+            password,
+          }),
+        });
+        const parsedResponse = await response.json();
+        if (response.ok) {
+          console.log("User logged in successfully:", parsedResponse);
+          navigate("/home");
+        }
+      } catch (error) {
+        console.error("Error logging in user:", error);
+      }
+    };
+    loginUser();
+  };
   return (
     <section className="h-screen bg-muted">
       <div className="flex h-full items-center justify-center">
@@ -49,10 +80,11 @@ const Login1 = ({
             {heading && <h1 className="text-3xl font-semibold">{heading}</h1>}
           </div>
           <div className="flex w-full flex-col gap-8">
-            <div className="flex flex-col gap-4">
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
               <div className="flex flex-col gap-2">
                 <Input
                   type="email"
+                  name="email"
                   placeholder="Email"
                   required
                   className="bg-white"
@@ -60,27 +92,29 @@ const Login1 = ({
               </div>
               <div className="flex flex-col gap-2">
                 <Input
-                  type="password"
+                  type="text"
+                  name="password"
                   placeholder="Password"
                   required
                   className="bg-white"
                 />
               </div>
               <div className="flex flex-col gap-4">
-                <Button type="submit" className="mt-2 w-full">
+                <Button type="submit" className="cursor-pointer mt-2 w-full">
                   {buttonText}
                 </Button>
-                <Button variant="outline" className="w-full">
+                <Button variant="outline" className="cursor-pointer w-full">
                   <FcGoogle className="mr-2 size-5" />
                   {googleText}
                 </Button>
               </div>
-            </div>
+            </form>
           </div>
           <div className="flex justify-center gap-1 text-sm text-muted-foreground">
             <p>{signupText}</p>
             <a
-              href={signupUrl}
+                            onClick={() => navigate(signupUrl)}
+
               className="font-medium text-primary hover:underline"
             >
               Sign up
