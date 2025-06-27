@@ -13,7 +13,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <Route path="/login" element={<Login1 />} />
       <Route element={<PrivateRoutes />}>
         <Route
-          path="/home"
+          path="/"
           element={
             <SidebarProvider>
               <AppSidebar />

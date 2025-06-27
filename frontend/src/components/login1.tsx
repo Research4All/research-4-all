@@ -49,11 +49,12 @@ const Login1 = ({
             email,
             password,
           }),
+          credentials: "include",
         });
         const parsedResponse = await response.json();
         if (response.ok) {
           console.log("User logged in successfully:", parsedResponse);
-          navigate("/home");
+          navigate("/");
         }
       } catch (error) {
         console.error("Error logging in user:", error);
@@ -113,8 +114,7 @@ const Login1 = ({
           <div className="flex justify-center gap-1 text-sm text-muted-foreground">
             <p>{signupText}</p>
             <a
-                            onClick={() => navigate(signupUrl)}
-
+              onClick={() => navigate(signupUrl)}
               className="font-medium text-primary hover:underline"
             >
               Sign up
