@@ -14,7 +14,12 @@ connectDB();
 import authRouter from "./routes/auth";
 
 const app: Application = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 let sessionConfig = {
@@ -22,15 +27,15 @@ let sessionConfig = {
   secret: process.env.SESSION_SECRET || "defaultSecret",
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
-    secure: process.env.RENDER ? true: false,
-    httpOnly: false,
+    secure: process.env.RENDER ? true : false,
+    httpOnly: true, // look into this more later
   },
   resave: false,
   saveUninitialized: false,
-}
+};
 
 app.use(session(sessionConfig));
-app.use('/api/auth', authRouter);
+app.use("/api/auth", authRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello, World!");
