@@ -2,16 +2,18 @@ import { Schema, model, Document } from "mongoose";
 
 export interface IPaper extends Document {
   paperId: string;
-  url: string;
   title: string;
-  abstract: string;
-  publicationDate: Date;
-  fieldsOfStudy: string[];
-  authors: string[];
-
-  keywords: string[]; // unsure if this field exists
-  // openAccessPdf ?: string; // Optional field for open access PDF URL
-  // Could be useful for reading paper directly from the app
+  abstract?: string;
+  url?: string;
+  openAccessPdf?: {
+    url: string;
+    license: string;
+    status: string;
+  };
+  fieldsOfStudy?: string[];
+  publicationDate?: Date;
+  publicationTypes?: string[];
+  authors?: string[];
 }
 
 const paperSchema = new Schema<IPaper>(
@@ -21,10 +23,6 @@ const paperSchema = new Schema<IPaper>(
       required: [true, "Paper ID is required"],
       unique: true,
     },
-    url: {
-      type: String,
-      required: [true, "URL is required"],
-    },
     title: {
       type: String,
       required: [true, "Title is required"],
@@ -32,20 +30,33 @@ const paperSchema = new Schema<IPaper>(
     },
     abstract: {
       type: String,
-      required: [true, "Abstract is required"],
+      required: false,
     },
-    publicationDate: {
-      type: Date,
+    url: {
+      type: String,
+      required: false,
+    },
+    openAccessPdf: {
+      type: {
+        url: { type: String, required: false },
+        license: { type: String, required: false },
+        status: { type: String, required: false },
+      },
+      required: false,
     },
     fieldsOfStudy: {
       type: [String],
       default: [],
     },
-    authors: {
+    publicationDate: {
+      type: Date,
+      required: false,
+    },
+    publicationTypes: {
       type: [String],
       default: [],
     },
-    keywords: {
+    authors: {
       type: [String],
       default: [],
     },

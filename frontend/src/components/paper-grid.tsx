@@ -3,12 +3,20 @@ import { useState, useEffect } from "react";
 export function PaperGrid() {
   const [papers, setPapers] = useState([]);
 
-  interface paper {
+  interface Paper {
     paperId: string;
     title: string;
-    publicationDate: string;
-    publicationTypes: string[];
-    openAccessPdf?: string;
+    abstract?: string;
+    url?: string;
+    openAccessPdf?: {
+      url: string;
+      license: string;
+      status: string;
+    };
+    fieldsOfStudy?: string[];
+    publicationDate: Date;
+    publicationTypes?: string[];
+    authors?: string[]; // Optional field for authors
   }
 
   useEffect(() => {
