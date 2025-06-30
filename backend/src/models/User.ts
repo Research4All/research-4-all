@@ -1,4 +1,5 @@
 import { Schema, model, Document } from "mongoose";
+import { ObjectId } from "mongodb";
 
 export interface IUser extends Document {
   username: string;
@@ -6,7 +7,9 @@ export interface IUser extends Document {
   encryptedPassword: string;
   role: "Student" | "Mentor";
   interests: string[];
-  // savedPapers: ?
+  likedPapers: ObjectId[];
+  dislikedPapers: ObjectId[];
+  savedPapers: ObjectId[];
   // savedMentors: ?
 }
 
