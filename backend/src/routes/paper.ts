@@ -1,6 +1,7 @@
 import { Router } from "express";
 import axios from "axios";
 import Paper from "../models/Paper";
+import User from "../models/User";
 
 const router = Router();
 
@@ -41,32 +42,62 @@ router.post("/save", async (req: any, res: any) => {
   if (!paperId || !title) {
     return res.status(400).json({ error: "Paper ID and title are required." });
   }
+  if (!req.session || !req.session.user) {
+    console.log(req.session);
+    return res.status(401).json({ error: "User not authenticated." });
+  }
 
   try {
-    let existingPaper = await Paper.findOne({ paperId });
-    if (existingPaper) {
-      console.log("Paper already exists in the database:", existingPaper);
-      return res
-        .status(200)
-        .json({ message: "Paper already exists in favorites." });
+    let paper = await Paper.findOne({ paperId });
+    if (!paper) {
+      paper = await Paper.create({
+        paperId,
+        title,
+        abstract,
+        url,
+        openAccessPdf,
+        fieldsOfStudy,
+        publicationDate,
+        publicationTypes,
+        authors,
+      });
+      console.log("New paper created:", paper);
+    } else {
+      console.log("Paper already exists in the database:", paper);
     }
-    const newPaper = await Paper.create({
-      paperId,
-      title,
-      abstract,
-      url,
-      openAccessPdf,
-      fieldsOfStudy,
-      publicationDate,
-      publicationTypes,
-      authors,
-    });
-    console.log("New paper created:", newPaper);
+
+    const user = await User.findById(req.session.user._id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+    if (!user.savedPapers.some((id: any) => id.equals(paper._id))) {
+      user.savedPapers.push(paper._id as (typeof user.savedPapers)[0]);
+      await user.save();
+    }
+    return res.status(201).json({ message: "Paper saved successfully." });
   } catch (error) {
     console.error("Error saving paper:", error);
     return res.status(500).json({ error: "Failed to save paper." });
   }
-  res.status(201).json({ message: "Paper saved successfully." });
+});
+
+router.get("/saved", async (req: any, res: any) => {
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ error: "User not authenticated." });
+  }
+  try {
+    const user = await User.findById(req.session.user._id)
+      .select("savedPapers")
+      .populate("savedPapers")
+      .exec();
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+    return res.json({ savedPapers: user.savedPapers });
+  } catch (error) {
+    console.error("Error fetching saved papers:", error);
+    return res.status(500).json({ error: "Failed to fetch saved papers." });
+  }
 });
 
 export default router;

@@ -36,7 +36,7 @@ const userSchema = new Schema<IUser>(
       default: "Student",
     }, // Remove default value when implementing roles
     interests: { type: [String], default: [] },
-    // savedPapers: { type: ?, ref: 'Paper' }, // Uncomment when Paper model is implemented
+    savedPapers: [{ type: Schema.Types.ObjectId, ref: "Paper", default: [] }],
     // savedMentors: { type: ?, ref: 'User' } // Uncomment when User model is implemented
   },
   {
