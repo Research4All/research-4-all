@@ -5,6 +5,7 @@ import { Login1 } from "./components/login1";
 import { PaperGrid } from "./components/paper-grid";
 import { PrivateRoutes } from "./components/private-route";
 import Layout from "./layout";
+import { HomeFeed } from "./components/home-feed";
 
 export default function App() {
   return (
@@ -12,14 +13,10 @@ export default function App() {
       <Route path="/signup" element={<Signup1 />} />
       <Route path="/login" element={<Login1 />} />
       <Route element={<PrivateRoutes />}>
-        <Route
-          path="/"
-          element={
-            <Layout>
-              <PaperGrid />
-            </Layout>
-          }
-        />
+        <Route element={<Layout />}>
+          <Route path="/" element={<HomeFeed />} />
+          <Route path="/papers" element={<PaperGrid />} />
+        </Route>
       </Route>
     </Routes>
   );
