@@ -44,6 +44,7 @@ export function PaperGrid() {
         body: JSON.stringify(
           paper,
         ),
+        credentials: "include",
       });
       const data = await response.json();
       if (response.ok) {
@@ -84,14 +85,16 @@ export function PaperGrid() {
                   Open Access PDF
                 </a>
               )}
-              <button
-                className="mt-2 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                onClick={() => {
+                <div className="mt-2">
+                <button
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer w-full"
+                  onClick={() => {
                   handleSavePaper(paper);
-                }}
-              >
-                Save paper
-              </button>
+                  }}
+                >
+                  Save paper
+                </button>
+                </div>
             </div>
           ))}
         </div>
