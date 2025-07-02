@@ -1,9 +1,16 @@
 import { useState, useEffect } from "react";
 import { PaperGrid } from "./paper-grid";
+import { Input } from "./ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+} from "./ui/dropdown-menu";
+import { Button } from "./ui/button";
 
 export function UserPapers() {
-  const [papers, setPapers] = useState([]);
-
   interface Paper {
     paperId: string;
     title: string;
@@ -20,19 +27,22 @@ export function UserPapers() {
     authors?: string[]; // Optional field for authors
   }
 
+  const [papers, setPapers] = useState([]);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("Newest");
+
   useEffect(() => {
     const fetchPapers = async () => {
       try {
         const response = await fetch("http://localhost:3000/api/papers/saved", {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            credentials: "include",
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
         });
         const data = await response.json();
         setPapers(data.savedPapers || []);
-
       } catch (error) {
         console.error("Error fetching papers:", error);
       }
@@ -47,9 +57,7 @@ export function UserPapers() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(
-          paper,
-        ),
+        body: JSON.stringify(paper),
         credentials: "include",
       });
       const data = await response.json();
@@ -61,14 +69,63 @@ export function UserPapers() {
     }
   };
 
-const PaperGridProps = {
-    papers: papers,
+  const filteredPapers: Paper[] = papers
+    .filter((paper: Paper) =>
+      paper.title.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a: Paper, b: Paper) => {
+      if (sortBy === "Newest") {
+        return (
+          new Date(b.publicationDate).getTime() -
+          new Date(a.publicationDate).getTime()
+        );
+      } else if (sortBy === "Oldest") {
+        return (
+          new Date(a.publicationDate).getTime() -
+          new Date(b.publicationDate).getTime()
+        );
+      } else if (sortBy === "Title A-Z") {
+        return a.title.localeCompare(b.title);
+      } else if (sortBy === "Title Z-A") {
+        return b.title.localeCompare(a.title);
+      }      
+      return 0;   
+    });
+
+  const PaperGridProps = {
+    papers: filteredPapers,
     handleSavePaper: handleSavePaper,
-};
-    if (papers.length === 0) {
-        return <div>No saved papers found.</div>;
-    }
+  };
+
+  if (filteredPapers.length === 0) {
+    return <div>No saved papers found.</div>;
+  }
   return (
-    <PaperGrid {...PaperGridProps}/>
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col sm:flex-row gap-2 items-center justify-between m-4">
+        <Input
+          placeholder="Search papers..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline"> Sort by: {sortBy} </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuRadioGroup value={sortBy} onValueChange={setSortBy}>
+              <DropdownMenuRadioItem value="Newest">
+                Newest
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Oldest">
+                Oldest
+              </DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Title">Title</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+      <PaperGrid {...PaperGridProps} />;
+    </div>
   );
 }
