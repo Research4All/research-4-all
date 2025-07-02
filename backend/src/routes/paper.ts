@@ -1,17 +1,18 @@
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import axios from "axios";
 import Paper from "../models/Paper";
 import User from "../models/User";
 
 const router = Router();
+const BULK_SEARCH_URL =
+  "http://api.semanticscholar.org/graph/v1/paper/search/bulk";
 
-router.get("/", (req: any, res: any) => {
+router.get("/", (req: Request, res: Response) => {
   axios
-    .get("http://api.semanticscholar.org/graph/v1/paper/search/bulk", {
+    .get(BULK_SEARCH_URL, {
       params: {
-        query: "generative ai",
+        query: "",
         fields: "title,url,publicationTypes,publicationDate,openAccessPdf",
-        year: 2023,
       },
     })
     .then((response) => {

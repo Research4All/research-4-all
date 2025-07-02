@@ -17,7 +17,7 @@ const PrivateRoutes = () => {
     }
   }, []);
 
-  if (auth === null) return <div>Loading...</div>; // or a spinner/loading component
+  if (auth == null) return <div>Loading...</div>; // or a spinner/loading component
 
   return auth ? <Outlet /> : <Navigate to="/login" />;
 };
