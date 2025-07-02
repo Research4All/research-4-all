@@ -12,6 +12,7 @@ connectDB();
 
 // Import routes
 import authRouter from "./routes/auth";
+import paperRouter from "./routes/paper";
 
 const app: Application = express();
 app.use(
@@ -40,6 +41,7 @@ let sessionConfig = {
 
 app.use(session(sessionConfig));
 app.use("/api/auth", authRouter);
+app.use("/api/papers", paperRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello, World!");
