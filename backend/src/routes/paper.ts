@@ -5,7 +5,8 @@ import User from "../models/User";
 
 const router = Router();
 
-router.get("/", (req: any, res: any) => {
+// Fetch bulk papers from Semantic Scholar API when user has no saved papers
+const fetchBulkPapers = (req: any, res: any) => {
   axios
     .get("http://api.semanticscholar.org/graph/v1/paper/search/bulk", {
       params: {
@@ -21,6 +22,62 @@ router.get("/", (req: any, res: any) => {
       console.error("Error fetching papers:", error);
       res.status(500).json({ error: "Failed to fetch papers." });
     });
+};
+
+// Fetch recommendations based on user's saved papers
+const fetchRecommendations = async (req: any, res: any) => {
+  const savedPaperIds = req.session.user.savedPapers.map((id: any) =>
+    id.toString()
+  );
+  const savedPapers = await Paper.find({
+    _id: { $in: savedPaperIds },
+  });
+  const realPositivePaperIds = savedPapers.map((paper: any) => paper.paperId);
+
+  const data = {
+    positivePaperIds: realPositivePaperIds,
+    negativePaperIds: [], // placeholder until we have disliked/not interested papers
+  };
+
+  axios
+    .post("https://api.semanticscholar.org/recommendations/v1/papers", data, {
+      params: {
+        fields: "title,url,citationCount,authors",
+        limit: "100",
+      },
+    })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((error) => {
+      console.error("Error fetching recommendations:", error);
+      res.status(500).json({ error: "Failed to fetch recommendations." });
+    });
+};
+
+router.get("/", (req: any, res: any) => {
+  fetchBulkPapers(req, res);
+});
+
+router.get("/recommendations", async (req: any, res: any) => {
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ error: "User not authenticated." });
+  }
+  try {
+    if (
+      !req.session.user.savedPapers ||
+      req.session.user.savedPapers.length === 0
+    ) {
+      fetchBulkPapers(req, res);
+      return;
+    } else {
+      await fetchRecommendations(req, res);
+      return;
+    }
+  } catch (error) {
+    console.error("Error fetching recommendations:", error);
+    return res.status(500).json({ error: "Failed to fetch recommendations." });
+  }
 });
 
 // Save paper to user's favorites
@@ -43,7 +100,6 @@ router.post("/save", async (req: any, res: any) => {
     return res.status(400).json({ error: "Paper ID and title are required." });
   }
   if (!req.session || !req.session.user) {
-    console.log(req.session);
     return res.status(401).json({ error: "User not authenticated." });
   }
 
@@ -61,9 +117,6 @@ router.post("/save", async (req: any, res: any) => {
         publicationTypes,
         authors,
       });
-      console.log("New paper created:", paper);
-    } else {
-      console.log("Paper already exists in the database:", paper);
     }
 
     const user = await User.findById(req.session.user._id);
