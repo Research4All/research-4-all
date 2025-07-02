@@ -42,9 +42,7 @@ export function HomeFeed() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(
-          paper,
-        ),
+        body: JSON.stringify(paper),
         credentials: "include",
       });
       const data = await response.json();
@@ -56,14 +54,10 @@ export function HomeFeed() {
     }
   };
 
-const PaperGridProps = {
-    papers: papers,
-    handleSavePaper: handleSavePaper,
-};
   return (
     <>
-    <div className="font-bold m-4">Recommended Papers</div>
-    <PaperGrid {...PaperGridProps}/>
+      <div className="font-bold m-4">Recommended Papers</div>
+      <PaperGrid papers={papers} handleSavePaper={handleSavePaper} />
     </>
   );
 }
