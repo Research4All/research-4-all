@@ -1,4 +1,5 @@
 import { Schema, model, Document } from "mongoose";
+import { ObjectId } from "mongodb";
 
 export interface IUser extends Document {
   username: string;
@@ -6,7 +7,9 @@ export interface IUser extends Document {
   encryptedPassword: string;
   role: "Student" | "Mentor";
   interests: string[];
-  // savedPapers: ?
+  likedPapers: ObjectId[];
+  dislikedPapers: ObjectId[];
+  savedPapers: ObjectId[];
   // savedMentors: ?
 }
 
@@ -30,10 +33,9 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["Student", "Mentor"],
       required: [true, "Role is required"],
-      default: "Student",
-    }, // Remove default value when implementing roles
+    },
     interests: { type: [String], default: [] },
-    // savedPapers: { type: ?, ref: 'Paper' }, // Uncomment when Paper model is implemented
+    savedPapers: [{ type: Schema.Types.ObjectId, ref: "Paper", default: [] }],
     // savedMentors: { type: ?, ref: 'User' } // Uncomment when User model is implemented
   },
   {

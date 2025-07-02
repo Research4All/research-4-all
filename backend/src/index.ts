@@ -12,6 +12,7 @@ connectDB();
 
 // Import routes
 import authRouter from "./routes/auth";
+import paperRouter from "./routes/paper";
 
 const app: Application = express();
 app.use(
@@ -22,9 +23,13 @@ app.use(
 );
 app.use(express.json());
 
+if (!process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET is not defined in .env file");
+}
+
 let sessionConfig = {
   name: "sessionId",
-  secret: process.env.SESSION_SECRET || "defaultSecret",
+  secret: process.env.SESSION_SECRET,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     secure: process.env.RENDER ? true : false,
@@ -36,6 +41,7 @@ let sessionConfig = {
 
 app.use(session(sessionConfig));
 app.use("/api/auth", authRouter);
+app.use("/api/papers", paperRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello, World!");

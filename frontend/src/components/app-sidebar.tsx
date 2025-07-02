@@ -22,6 +22,8 @@ import {
 
 import { NavUser } from "@/components/nav-user";
 
+import { Link } from "react-router";
+
 // Menu items.
 const user = {
   name: "shadcn",
@@ -73,10 +75,10 @@ export function AppSidebar() {
               {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
-                    <a href={item.url}>
+                    <Link to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
