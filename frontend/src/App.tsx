@@ -3,7 +3,6 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Signup1 } from "./components/signup1";
 import { Login1 } from "./components/login1";
-import { PaperGrid } from "./components/paper-grid";
 import { PrivateRoutes } from "./components/private-route";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -12,7 +11,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       
       <Route path="/signup" element={<Signup1 />} />
       <Route path="/login" element={<Login1 />} />
-      <Route path="/papers" element={<PaperGrid />} />
       <Route element={<PrivateRoutes />}>
         <Route
           path="/"
@@ -21,7 +19,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               <AppSidebar />
               <main>
                 <SidebarTrigger />
-                {<PaperGrid />}
+                {children}
               </main>
             </SidebarProvider>
           }
