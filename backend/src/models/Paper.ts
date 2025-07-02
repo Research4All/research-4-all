@@ -28,11 +28,10 @@ const paperSchema = new Schema<IPaper>(
     title: {
       type: String,
       required: [true, "Title is required"],
-      unique: true,
     },
     abstract: {
       type: String,
-      required: [true, "Abstract is required"],
+      required: false,
     },
     publicationDate: {
       type: Date,
