@@ -22,7 +22,6 @@ interface PaperGridProps {
 export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
   return (
     <div>
-      <h2>Recommended Papers</h2>
       {papers.length > 0 ? (
         <div className="grid grid-cols-4 gap-4 m-4">
           {papers.map((paper: Paper) => (

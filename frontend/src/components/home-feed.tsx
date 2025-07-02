@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { PaperGrid } from "./paper-grid";
 
+const BACKEND_URL = import.meta.env.BACKEND_URL || "http://localhost:3000";
+
 export function HomeFeed() {
   const [papers, setPapers] = useState([]);
 
@@ -23,7 +25,7 @@ export function HomeFeed() {
   useEffect(() => {
     const fetchPapers = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/papers/");
+        const response = await fetch(`${BACKEND_URL}/api/papers/`);
         const data = await response.json();
         setPapers(data.data);
       } catch (error) {
@@ -35,7 +37,7 @@ export function HomeFeed() {
 
   const handleSavePaper = async (paper: Paper) => {
     try {
-      const response = await fetch("http://localhost:3000/api/papers/save", {
+      const response = await fetch(`${BACKEND_URL}/api/papers/save`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -59,6 +61,9 @@ const PaperGridProps = {
     handleSavePaper: handleSavePaper,
 };
   return (
+    <>
+    <div className="font-bold m-4">Recommended Papers</div>
     <PaperGrid {...PaperGridProps}/>
+    </>
   );
 }

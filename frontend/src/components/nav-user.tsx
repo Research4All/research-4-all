@@ -28,6 +28,8 @@ import {
 
 import { useNavigate } from "react-router";
 
+const BACKEND_URL = import.meta.env.BACKEND_URL || "http://localhost:3000";
+
 export function NavUser({
   user,
 }: {
@@ -41,7 +43,7 @@ export function NavUser({
   const navigate = useNavigate();
   const handleLogout = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/auth/logout", {
+      const response = await fetch(`${BACKEND_URL}/api/auth/logout`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

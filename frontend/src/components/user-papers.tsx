@@ -10,6 +10,8 @@ import {
 } from "./ui/dropdown-menu";
 import { Button } from "./ui/button";
 
+const BACKEND_URL = import.meta.env.BACKEND_URL || "http://localhost:3000";
+
 export function UserPapers() {
   interface Paper {
     paperId: string;
@@ -34,7 +36,7 @@ export function UserPapers() {
   useEffect(() => {
     const fetchPapers = async () => {
       try {
-        const response = await fetch("http://localhost:3000/api/papers/saved", {
+        const response = await fetch(`${BACKEND_URL}/api/papers/saved`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
@@ -52,7 +54,7 @@ export function UserPapers() {
 
   const handleSavePaper = async (paper: Paper) => {
     try {
-      const response = await fetch("http://localhost:3000/api/papers/save", {
+      const response = await fetch(`${BACKEND_URL}/api/papers/save`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -120,11 +122,14 @@ export function UserPapers() {
               <DropdownMenuRadioItem value="Oldest">
                 Oldest
               </DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="Title">Title</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Title A-Z">Title A-Z</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="Title Z-A">Title Z-A</DropdownMenuRadioItem>
             </DropdownMenuRadioGroup>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      <div className="font-bold ml-4">My Papers</div>
+
       <PaperGrid {...PaperGridProps} />;
     </div>
   );
