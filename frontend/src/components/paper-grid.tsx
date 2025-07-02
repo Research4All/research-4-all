@@ -1,24 +1,22 @@
-// import { useState, useEffect } from "react";
-
 interface Paper {
-    paperId: string;
-    title: string;
-    abstract?: string;
-    url?: string;
-    openAccessPdf?: {
-      url: string;
-      license: string;
-      status: string;
-    };
-    fieldsOfStudy?: string[];
-    publicationDate: Date;
-    publicationTypes?: string[];
-    authors?: string[]; // Optional field for authors
+  paperId: string;
+  title: string;
+  abstract?: string;
+  url?: string;
+  openAccessPdf?: {
+    url: string;
+    license: string;
+    status: string;
+  };
+  fieldsOfStudy?: string[];
+  publicationDate: Date;
+  publicationTypes?: string[];
+  authors?: string[]; // Optional field for authors
 }
 
 interface PaperGridProps {
-    papers: Paper[];
-    handleSavePaper: (paper: Paper) => void;
+  papers: Paper[];
+  handleSavePaper: (paper: Paper) => void;
 }
 
 export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
@@ -39,42 +37,6 @@ export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
     publicationTypes?: string[];
     authors?: string[]; // Optional field for authors
   }
-
-  // useEffect(() => {
-  //   const fetchPapers = async () => {
-  //     try {
-  //       const response = await fetch("http://localhost:3000/api/papers/");
-  //       const data = await response.json();
-  //       setPapers(data.data);
-  //     } catch (error) {
-  //       console.error("Error fetching papers:", error);
-  //     }
-  //   };
-  //   fetchPapers();
-  // }, []);
-
-  // const handleSavePaper = async (paper: Paper) => {
-  //   try {
-  //     console.log("Saving paper:");
-  //     console.log(paper);
-  //     const response = await fetch("http://localhost:3000/api/papers/save", {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //       },
-  //       body: JSON.stringify(
-  //         paper,
-  //       ),
-  //       credentials: "include",
-  //     });
-  //     const data = await response.json();
-  //     if (response.ok) {
-  //       console.log("Paper saved successfully:", data);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error saving paper:", error);
-  //   }
-  // };
 
   return (
     <div>
@@ -106,16 +68,16 @@ export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
                   Open Access PDF
                 </a>
               )}
-                <div className="mt-2">
+              <div className="mt-2">
                 <button
                   className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer w-full"
                   onClick={() => {
-                  handleSavePaper(paper);
+                    handleSavePaper(paper);
                   }}
                 >
                   Save paper
                 </button>
-                </div>
+              </div>
             </div>
           ))}
         </div>
