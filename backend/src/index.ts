@@ -22,9 +22,13 @@ app.use(
 );
 app.use(express.json());
 
+if (!process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET is not defined in .env file");
+}
+
 let sessionConfig = {
   name: "sessionId",
-  secret: process.env.SESSION_SECRET || "defaultSecret",
+  secret: process.env.SESSION_SECRET,
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     secure: process.env.RENDER ? true : false,

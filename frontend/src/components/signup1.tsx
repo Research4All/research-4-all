@@ -2,7 +2,7 @@ import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router";
-
+import { useCallback } from "react";
 
 interface Signup1Props {
   heading?: string;
@@ -32,41 +32,43 @@ const Signup1 = ({
   loginUrl = "/login",
 }: Signup1Props) => {
   const navigate = useNavigate();
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const username = formData.get("username") as string;
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+  const handleSubmit = useCallback(
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
+      const formData = new FormData(event.currentTarget);
+      const username = formData.get("username") as string;
+      const email = formData.get("email") as string;
+      const password = formData.get("password") as string;
 
-    // Handle form submission logic here
-    const registerUser = async () => {
-      try {
-        const response = await fetch(
-          `http://localhost:3000/api/auth/register`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              username,
-              email,
-              password,
-            }),
+      // Handle form submission logic here
+      const registerUser = async () => {
+        try {
+          const response = await fetch(
+            `http://localhost:3000/api/auth/register`,
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                username,
+                email,
+                password,
+              }),
+            }
+          );
+          const parsedResponse = await response.json();
+          if (response.ok) {
+            console.log("User registered successfully:", parsedResponse);
+            navigate("/login");
           }
-        );
-        const parsedResponse = await response.json();
-        if (response.ok) {
-          console.log("User registered successfully:", parsedResponse);
-          navigate("/login");
+        } catch (error) {
+          console.error("Error registering user:", error);
         }
-      } catch (error) {
-        console.error("Error registering user:", error);
-      }
-    };
-    registerUser();
-  };
+      };
+      registerUser();
+    }, [navigate]
+  );
   return (
     <section className="h-screen bg-muted">
       <div className="flex h-full items-center justify-center">
@@ -131,7 +133,7 @@ const Signup1 = ({
               onClick={() => navigate(loginUrl)}
               className="font-medium text-primary hover:underline"
             >
-              Login
+              Log in
             </a>
           </div>
         </div>
