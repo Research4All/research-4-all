@@ -40,7 +40,7 @@ router.post("/login", async (req: any, res: any) => {
       !user ||
       !(await verifyPassword(plainPassword, user.encryptedPassword))
     ) {
-      return res.status(400).json({ error: "Invalid email or password." });
+      return res.status(401).json({ error: "Invalid email or password." });
     } else {
       req.session.user = user;
       return res.json({ message: "Login successful." });

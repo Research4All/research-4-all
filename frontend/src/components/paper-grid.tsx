@@ -1,24 +1,22 @@
-// import { useState, useEffect } from "react";
-
 interface Paper {
-    paperId: string;
-    title: string;
-    abstract?: string;
-    url?: string;
-    openAccessPdf?: {
-      url: string;
-      license: string;
-      status: string;
-    };
-    fieldsOfStudy?: string[];
-    publicationDate: Date;
-    publicationTypes?: string[];
-    authors?: string[]; // Optional field for authors
+  paperId: string;
+  title: string;
+  abstract?: string;
+  url?: string;
+  openAccessPdf?: {
+    url: string;
+    license: string;
+    status: string;
+  };
+  fieldsOfStudy?: string[];
+  publicationDate: Date;
+  publicationTypes?: string[];
+  authors?: string[]; // Optional field for authors
 }
 
 interface PaperGridProps {
-    papers: Paper[];
-    handleSavePaper: (paper: Paper) => void;
+  papers: Paper[];
+  handleSavePaper: (paper: Paper) => void;
 }
 
 export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
@@ -53,16 +51,16 @@ export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
                   Open Access PDF
                 </a>
               )}
-                <div className="mt-2">
+              <div className="mt-2">
                 <button
                   className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer w-full"
                   onClick={() => {
-                  handleSavePaper(paper);
+                    handleSavePaper(paper);
                   }}
                 >
                   Save paper
                 </button>
-                </div>
+              </div>
             </div>
           ))}
         </div>

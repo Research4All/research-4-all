@@ -1,12 +1,14 @@
 import { Schema, model, Document } from "mongoose";
+import { IUser } from "./User";
 
 export interface IChat extends Document {
-  participants: string[];
+  participants: IUser[];
 }
 const chatSchema = new Schema<IChat>(
   {
     participants: {
-      type: [String],
+      type: [Schema.Types.ObjectId],
+      ref: "User",
       required: [true, "Participants are required"],
     },
   },
