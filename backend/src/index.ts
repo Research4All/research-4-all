@@ -1,13 +1,45 @@
 import dotenv from "dotenv";
-dotenv.config();
-
+import cors from "cors";
 import express, { Request, Response, Application } from "express";
+import session from "express-session";
+import connectDB from "./db/database";
 
-const app: Application = express();
-
+dotenv.config();
 const PORT: number = Number(process.env.PORT) || 5000;
 
+// Connect to the database
+connectDB();
+
+// Import routes
+import authRouter from "./routes/auth";
+
+const app: Application = express();
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  })
+);
 app.use(express.json());
+
+if (!process.env.SESSION_SECRET) {
+  throw new Error("SESSION_SECRET is not defined in .env file");
+}
+
+let sessionConfig = {
+  name: "sessionId",
+  secret: process.env.SESSION_SECRET,
+  cookie: {
+    maxAge: 1000 * 60 * 60 * 24, // 1 day
+    secure: process.env.RENDER ? true : false,
+    httpOnly: true, // look into this more later
+  },
+  resave: false,
+  saveUninitialized: false,
+};
+
+app.use(session(sessionConfig));
+app.use("/api/auth", authRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello, World!");
