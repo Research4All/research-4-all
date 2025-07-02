@@ -33,8 +33,7 @@ const userSchema = new Schema<IUser>(
       type: String,
       enum: ["Student", "Mentor"],
       required: [true, "Role is required"],
-      default: "Student",
-    }, // Remove default value when implementing roles
+    },
     interests: { type: [String], default: [] },
     savedPapers: [{ type: Schema.Types.ObjectId, ref: "Paper", default: [] }],
     // savedMentors: { type: ?, ref: 'User' } // Uncomment when User model is implemented

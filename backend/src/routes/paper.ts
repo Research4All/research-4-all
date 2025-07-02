@@ -1,18 +1,20 @@
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 import axios from "axios";
 import Paper from "../models/Paper";
 import User from "../models/User";
 
 const router = Router();
+const BULK_URL =
+  "http://api.semanticscholar.org/graph/v1/paper/search/bulk";
+const RECOMMENDATIONS_URL = "https://api.semanticscholar.org/recommendations/v1/papers";
 
 // Fetch bulk papers from Semantic Scholar API when user has no saved papers
 const fetchBulkPapers = (req: any, res: any) => {
   axios
-    .get("http://api.semanticscholar.org/graph/v1/paper/search/bulk", {
+    .get(BULK_URL, {
       params: {
-        query: "generative ai",
+        query: "",
         fields: "title,url,publicationTypes,publicationDate,openAccessPdf",
-        year: 2023,
       },
     })
     .then((response) => {
@@ -40,7 +42,7 @@ const fetchRecommendations = async (req: any, res: any) => {
   };
 
   axios
-    .post("https://api.semanticscholar.org/recommendations/v1/papers", data, {
+    .post(RECOMMENDATIONS_URL, data, {
       params: {
         fields: "title,url,citationCount,authors",
         limit: "100",
@@ -80,9 +82,6 @@ router.get("/recommendations", async (req: any, res: any) => {
   }
 });
 
-// Save paper to user's favorites
-// Creates a new paper in the database if it doesn't already exist
-// TODO: Add paper id to user's favorites list
 router.post("/save", async (req: any, res: any) => {
   const {
     paperId,
