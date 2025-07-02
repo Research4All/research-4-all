@@ -4,18 +4,17 @@ import Paper from "../models/Paper";
 import User from "../models/User";
 
 const router = Router();
-const BULK_URL =
+const BULK_SEARCH_URL =
   "http://api.semanticscholar.org/graph/v1/paper/search/bulk";
-const RECOMMENDATIONS_URL = "https://api.semanticscholar.org/recommendations/v1/papers";
+const RECOMMENDATIONS_URL =
+  "https://api.semanticscholar.org/recommendations/v1/papers";
 
-// Fetch bulk papers from Semantic Scholar API when user has no saved papers
-const fetchBulkPapers = (req: any, res: any) => {
+const fetchBulkPapers = (req: Request, res: Response) => {
   axios
-    .get(BULK_URL, {
+    .get(BULK_SEARCH_URL, {
       params: {
-        query: "computer science",
+        query: "computer science", // placeholder query, can be modified
         fields: "title,url,publicationTypes,publicationDate,openAccessPdf",
-        limit: 100
       },
     })
     .then((response) => {
