@@ -100,4 +100,25 @@ router.get("/saved", async (req: any, res: any) => {
   }
 });
 
+router.post("/delete/:paperId", async (req: any, res: any) => {
+  const { paperId } = req.params;
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ error: "User not authenticated." });
+  }
+  try {
+    const user = await User.findById(req.session.user._id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+    user.savedPapers = user.savedPapers.filter(
+      (id: any) => !id.equals(paperId)
+    );
+    await user.save();
+    return res.status(200).json({ message: "Paper unsaved successfully." });
+  } catch (error) {
+    console.error("Error unsaving paper:", error);
+    return res.status(500).json({ error: "Failed to unsave paper." });
+  }
+});
+
 export default router;
