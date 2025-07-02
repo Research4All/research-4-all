@@ -6,6 +6,7 @@ import { PaperGrid } from "./components/paper-grid";
 import { PrivateRoutes } from "./components/private-route";
 import Layout from "./layout";
 import { HomeFeed } from "./components/home-feed";
+import { UserPapers } from "./components/user-papers";
 
 export default function App() {
   return (
@@ -15,7 +16,7 @@ export default function App() {
       <Route element={<PrivateRoutes />}>
         <Route element={<Layout />}>
           <Route path="/" element={<HomeFeed />} />
-          <Route path="/papers" element={<PaperGrid />} />
+          <Route path="/papers" element={<UserPapers />} />
         </Route>
       </Route>
     </Routes>
