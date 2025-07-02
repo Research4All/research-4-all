@@ -13,8 +13,9 @@ const fetchBulkPapers = (req: any, res: any) => {
   axios
     .get(BULK_URL, {
       params: {
-        query: "",
+        query: "computer science",
         fields: "title,url,publicationTypes,publicationDate,openAccessPdf",
+        limit: 100
       },
     })
     .then((response) => {
