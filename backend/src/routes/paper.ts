@@ -4,12 +4,14 @@ import Paper from "../models/Paper";
 import User from "../models/User";
 
 const router = Router();
-const BULK_SEARCH_URL =
+const BULK_URL =
   "http://api.semanticscholar.org/graph/v1/paper/search/bulk";
+const RECOMMENDATIONS_URL = "https://api.semanticscholar.org/recommendations/v1/papers";
 
-router.get("/", (req: Request, res: Response) => {
+// Fetch bulk papers from Semantic Scholar API when user has no saved papers
+const fetchBulkPapers = (req: any, res: any) => {
   axios
-    .get(BULK_SEARCH_URL, {
+    .get(BULK_URL, {
       params: {
         query: "",
         fields: "title,url,publicationTypes,publicationDate,openAccessPdf",
@@ -22,11 +24,64 @@ router.get("/", (req: Request, res: Response) => {
       console.error("Error fetching papers:", error);
       res.status(500).json({ error: "Failed to fetch papers." });
     });
+};
+
+// Fetch recommendations based on user's saved papers
+const fetchRecommendations = async (req: any, res: any) => {
+  const savedPaperIds = req.session.user.savedPapers.map((id: any) =>
+    id.toString()
+  );
+  const savedPapers = await Paper.find({
+    _id: { $in: savedPaperIds },
+  });
+  const realPositivePaperIds = savedPapers.map((paper: any) => paper.paperId);
+
+  const data = {
+    positivePaperIds: realPositivePaperIds,
+    negativePaperIds: [], // placeholder until we have disliked/not interested papers
+  };
+
+  axios
+    .post(RECOMMENDATIONS_URL, data, {
+      params: {
+        fields: "title,url,citationCount,authors",
+        limit: "100",
+      },
+    })
+    .then((response) => {
+      res.json(response.data);
+    })
+    .catch((error) => {
+      console.error("Error fetching recommendations:", error);
+      res.status(500).json({ error: "Failed to fetch recommendations." });
+    });
+};
+
+router.get("/", (req: any, res: any) => {
+  fetchBulkPapers(req, res);
 });
 
-// Save paper to user's favorites
-// Creates a new paper in the database if it doesn't already exist
-// TODO: Add paper id to user's favorites list
+router.get("/recommendations", async (req: any, res: any) => {
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ error: "User not authenticated." });
+  }
+  try {
+    if (
+      !req.session.user.savedPapers ||
+      req.session.user.savedPapers.length === 0
+    ) {
+      fetchBulkPapers(req, res);
+      return;
+    } else {
+      await fetchRecommendations(req, res);
+      return;
+    }
+  } catch (error) {
+    console.error("Error fetching recommendations:", error);
+    return res.status(500).json({ error: "Failed to fetch recommendations." });
+  }
+});
+
 router.post("/save", async (req: any, res: any) => {
   const {
     paperId,
@@ -44,7 +99,6 @@ router.post("/save", async (req: any, res: any) => {
     return res.status(400).json({ error: "Paper ID and title are required." });
   }
   if (!req.session || !req.session.user) {
-    console.log(req.session);
     return res.status(401).json({ error: "User not authenticated." });
   }
 
@@ -62,9 +116,6 @@ router.post("/save", async (req: any, res: any) => {
         publicationTypes,
         authors,
       });
-      console.log("New paper created:", paper);
-    } else {
-      console.log("Paper already exists in the database:", paper);
     }
 
     const user = await User.findById(req.session.user._id);
@@ -98,6 +149,27 @@ router.get("/saved", async (req: any, res: any) => {
   } catch (error) {
     console.error("Error fetching saved papers:", error);
     return res.status(500).json({ error: "Failed to fetch saved papers." });
+  }
+});
+
+router.post("/delete/:paperId", async (req: any, res: any) => {
+  const { paperId } = req.params;
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ error: "User not authenticated." });
+  }
+  try {
+    const user = await User.findById(req.session.user._id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+    user.savedPapers = user.savedPapers.filter(
+      (id: any) => !id.equals(paperId)
+    );
+    await user.save();
+    return res.status(200).json({ message: "Paper unsaved successfully." });
+  } catch (error) {
+    console.error("Error unsaving paper:", error);
+    return res.status(500).json({ error: "Failed to unsave paper." });
   }
 });
 

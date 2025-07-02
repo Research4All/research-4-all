@@ -20,7 +20,6 @@ interface PaperGridProps {
 }
 
 export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
-
   return (
     <div>
       <h2>Recommended Papers</h2>

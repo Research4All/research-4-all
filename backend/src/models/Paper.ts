@@ -11,7 +11,7 @@ export interface IPaper extends Document {
     status: string;
   };
   fieldsOfStudy?: string[];
-  publicationDate?: Date;
+  publicationDate?: String;
   publicationTypes?: string[];
   authors?: string[];
 }
@@ -48,7 +48,7 @@ const paperSchema = new Schema<IPaper>(
       default: [],
     },
     publicationDate: {
-      type: Date,
+      type: String,
       required: false,
     },
     publicationTypes: {
