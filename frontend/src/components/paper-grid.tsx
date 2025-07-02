@@ -20,27 +20,8 @@ interface PaperGridProps {
 }
 
 export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
-  // const [papers, setPapers] = useState([]);
-
-  interface Paper {
-    paperId: string;
-    title: string;
-    abstract?: string;
-    url?: string;
-    openAccessPdf?: {
-      url: string;
-      license: string;
-      status: string;
-    };
-    fieldsOfStudy?: string[];
-    publicationDate: Date;
-    publicationTypes?: string[];
-    authors?: string[]; // Optional field for authors
-  }
-
   return (
     <div>
-      <h2>Recommended Papers</h2>
       {papers.length > 0 ? (
         <div className="grid grid-cols-4 gap-4 m-4">
           {papers.map((paper: Paper) => (

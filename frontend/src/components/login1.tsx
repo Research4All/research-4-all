@@ -17,6 +17,8 @@ interface Login1Props {
   signupUrl?: string;
 }
 
+const BACKEND_URL = import.meta.env.BACKEND_URL || "http://localhost:3000";
+
 const Login1 = ({
   heading,
   logo = {
@@ -40,7 +42,7 @@ const Login1 = ({
     // Handle form submission logic here
     const loginUser = async () => {
       try {
-        const response = await fetch(`http://localhost:3000/api/auth/login`, {
+        const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

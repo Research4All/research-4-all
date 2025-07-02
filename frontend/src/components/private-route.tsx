@@ -1,12 +1,14 @@
 import { Navigate, Outlet } from "react-router";
 import { useEffect, useState } from "react";
 
+const BACKEND_URL = import.meta.env.BACKEND_URL || "http://localhost:3000";
+
 const PrivateRoutes = () => {
   const [auth, setAuth] = useState<null | boolean>(null);
 
   useEffect(() => {
     try {
-      fetch("http://localhost:3000/api/auth/status", {
+      fetch(`${BACKEND_URL}/api/auth/status`, {
         credentials: "include",
       })
         .then((res) => res.json())

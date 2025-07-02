@@ -18,6 +18,8 @@ interface Signup1Props {
   loginUrl?: string;
 }
 
+const BACKEND_URL = import.meta.env.BACKEND_URL || "http://localhost:3000";
+
 const Signup1 = ({
   heading,
   logo = {
@@ -44,7 +46,7 @@ const Signup1 = ({
       const registerUser = async () => {
         try {
           const response = await fetch(
-            `http://localhost:3000/api/auth/register`,
+            `${BACKEND_URL}/api/auth/register`,
             {
               method: "POST",
               headers: {
