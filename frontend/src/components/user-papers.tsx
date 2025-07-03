@@ -130,7 +130,7 @@ export function UserPapers() {
       </div>
       <div className="font-bold ml-4">My Papers</div>
 
-      <PaperGrid {...PaperGridProps} />;
+      <PaperGrid {...PaperGridProps} />
     </div>
   );
 }
