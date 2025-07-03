@@ -6,7 +6,7 @@ import { useCallback } from "react";
 
 interface Signup1Props {
   heading?: string;
-  logo: {
+  logo?: {
     url: string;
     src: string;
     alt: string;
@@ -22,12 +22,12 @@ const BACKEND_URL = import.meta.env.BACKEND_URL || "http://localhost:3000";
 
 const Signup1 = ({
   heading,
-  logo = {
-    url: "https://www.shadcnblocks.com",
-    src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/logos/shadcnblockscom-wordmark.svg",
-    alt: "logo",
-    title: "shadcnblocks.com",
-  },
+  // logo = {
+  //   url: "https://www.shadcnblocks.com",
+  //   src: "https://deifkwefumgah.cloudfront.net/shadcnblocks/block/logos/shadcnblockscom-wordmark.svg",
+  //   alt: "logo",
+  //   title: "shadcnblocks.com",
+  // },
   googleText = "Sign up with Google",
   signupText = "Create an account",
   loginText = "Already have an account?",
@@ -76,8 +76,9 @@ const Signup1 = ({
       <div className="flex h-full items-center justify-center">
         <div className="flex w-full max-w-sm flex-col items-center gap-y-8 rounded-md border border-muted bg-white px-6 py-12 shadow-md">
           <div className="flex flex-col items-center gap-y-2">
+            {/* TODO: May create logo later */}
             {/* Logo */}
-            <div className="flex items-center gap-1 lg:justify-start">
+            {/* <div className="flex items-center gap-1 lg:justify-start">
               <a href={logo.url}>
                 <img
                   src={logo.src}
@@ -86,7 +87,7 @@ const Signup1 = ({
                   className="h-10"
                 />
               </a>
-            </div>
+            </div> */}
             {heading && <h1 className="text-3xl font-semibold">{heading}</h1>}
           </div>
           <div className="flex w-full flex-col gap-8">
