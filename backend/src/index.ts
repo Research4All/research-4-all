@@ -42,15 +42,23 @@ let sessionConfig = {
   saveUninitialized: false,
 };
 
+const authMiddleware = (req: any, res: Response, next: any) => {
+  if (req.session.user) {
+    next();
+  } else {
+    res.status(401).json({ error: "Unauthorized" })
+  }
+};
+
 app.use(session(sessionConfig));
 app.use("/api/auth", authRouter);
 app.use("/api/papers", paperRouter);
-app.use("/api/users", userRouter);
+app.use("/api/users", authMiddleware, userRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello, World!");
 });
 
 app.listen(PORT, () => {
-  console.log(`Server is running on ${FRONTEND_URL}`);
+  console.log(`Server is running on ${PORT}`);
 });

@@ -5,9 +5,6 @@ import User from "../models/User";
 const router = Router();
 
 router.get("/profile", async (req: any, res: any) => {
-  if (!req.session.user) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
   try {
     const user = await User.findById(req.session.user._id);
     if (!user) {
@@ -22,9 +19,6 @@ router.get("/profile", async (req: any, res: any) => {
 });
 
 router.put("/profile", async (req: any, res: any) => {
-  if (!req.session.user) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
   try {
     const user = await User.findById(req.session.user._id);
     if (!user) {
@@ -44,9 +38,6 @@ router.put("/profile", async (req: any, res: any) => {
 });
 
 router.get("/mentors", async (req: any, res: any) => {
-  if (!req.session.user) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
   try {
     const user = await User.findById(req.session.user._id);
     if (!user) {
@@ -64,9 +55,6 @@ router.get("/mentors", async (req: any, res: any) => {
 });
 
 router.get("/students", async (req: any, res: any) => {
-  if (!req.session.user) {
-    return res.status(401).json({ error: "Unauthorized" });
-  }
   try {
     const user = await User.findById(req.session.user._id);
     if (!user) {
