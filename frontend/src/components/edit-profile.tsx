@@ -27,7 +27,7 @@ const INTEREST_OPTIONS = [
   "Linguistics",
 ];
 
-const BACKEND_URL = import.meta.env.BACKEND_URL || "http://localhost:3000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 export function EditProfile() {
   const [selected, setSelected] = useState<string[]>([]);
