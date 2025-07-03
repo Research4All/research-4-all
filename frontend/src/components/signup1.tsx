@@ -18,7 +18,7 @@ interface Signup1Props {
   loginUrl?: string;
 }
 
-const BACKEND_URL = import.meta.env.BACKEND_URL || "http://localhost:3000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 const Signup1 = ({
   heading,

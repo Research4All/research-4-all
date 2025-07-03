@@ -1,7 +1,7 @@
 import { Navigate, Outlet } from "react-router";
 import { useEffect, useState } from "react";
 
-const BACKEND_URL = import.meta.env.BACKEND_URL || "http://localhost:3000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 const PrivateRoutes = () => {
   const [auth, setAuth] = useState<null | boolean>(null);
