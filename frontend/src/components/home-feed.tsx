@@ -25,9 +25,21 @@ export function HomeFeed() {
   useEffect(() => {
     const fetchPapers = async () => {
       try {
-        const response = await fetch(`${BACKEND_URL}/api/papers/`);
+        const response = await fetch(`${BACKEND_URL}/api/papers/recommendations`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
         const data = await response.json();
-        setPapers(data.data);
+        if (data.recommendedPapers) {
+          setPapers(data.recommendedPapers);
+        } else if (data.data) {
+          setPapers([]);
+        } else {
+          throw new Error("Unexpected response format");
+        }
       } catch (error) {
         console.error("Error fetching papers:", error);
       }

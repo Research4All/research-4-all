@@ -53,9 +53,7 @@ const Login1 = ({
           }),
           credentials: "include",
         });
-        const parsedResponse = await response.json();
         if (response.ok) {
-          console.log("User logged in successfully:", parsedResponse);
           navigate("/");
         }
       } catch (error) {

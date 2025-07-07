@@ -44,8 +44,9 @@ const fetchRecommendations = async (req: any, res: any) => {
   axios
     .post(RECOMMENDATIONS_URL, data, {
       params: {
-        fields: "title,url,citationCount,authors",
-        limit: "100",
+        // add later: citationCount,authors
+        fields: "title,url,publicationDate,publicationTypes,openAccessPdf",
+        limit: "16",
       },
     })
     .then((response) => {
