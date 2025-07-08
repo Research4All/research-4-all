@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router";
 import { Signup1 } from "./components/signup1";
 import { Login1 } from "./components/login1";
 import { PrivateRoutes } from "./components/private-route";
+import { ProfileDisplay } from "./components/profile-display";
 import { EditProfile } from "./components/edit-profile";
 import Layout from "./layout";
 import { HomeFeed } from "./components/home-feed";
@@ -19,6 +20,7 @@ export default function App() {
         <Route element={<Layout />}>
           <Route path="/" element={<HomeFeed />} />
           <Route path="/papers" element={<UserPapers />} />
+          <Route path="/profile" element={<ProfileDisplay />} />
           <Route path="/edit-profile" element={<EditProfile />} />
         </Route>
       </Route>
