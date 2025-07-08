@@ -52,12 +52,12 @@ router.post("/onboarding", async (req: any, res: any) => {
     }
     user.role = role;
     user.interests = interests;
-    // user.onboardingCompleted = true;
+    user.onboardingComplete = true;
     await user.save();
     req.session.user = user;
     return res.json({
       message: "Onboarding completed successfully",
-      // onboardingCompleted: true,
+      onboardingComplete: true,
       role: user.role,
       interests: user.interests,
     });
