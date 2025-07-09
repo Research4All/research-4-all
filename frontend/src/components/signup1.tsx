@@ -57,12 +57,14 @@ const Signup1 = ({
                 email,
                 password,
               }),
+              credentials: "include",
             }
           );
           const parsedResponse = await response.json();
+
           if (response.ok) {
             console.log("User registered successfully:", parsedResponse);
-            navigate("/login");
+            navigate("/onboarding");
           }
         } catch (error) {
           console.error("Error registering user:", error);

@@ -10,6 +10,7 @@ export interface IUser extends Document {
   likedPapers: ObjectId[];
   dislikedPapers: ObjectId[];
   savedPapers: ObjectId[];
+  onboardingComplete: boolean;
   // savedMentors: ?
 }
 
@@ -32,10 +33,14 @@ const userSchema = new Schema<IUser>(
     role: {
       type: String,
       enum: ["Student", "Mentor"],
-      required: [true, "Role is required"],
+      required: false
     },
     interests: { type: [String], default: [] },
     savedPapers: [{ type: Schema.Types.ObjectId, ref: "Paper", default: [] }],
+    onboardingComplete: {
+      type: Boolean,
+      default: false,
+    },
     // savedMentors: { type: ?, ref: 'User' } // Uncomment when User model is implemented
   },
   {

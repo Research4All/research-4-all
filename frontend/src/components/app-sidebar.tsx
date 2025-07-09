@@ -25,12 +25,6 @@ import { NavUser } from "@/components/nav-user";
 import { Link } from "react-router";
 
 // Menu items.
-const user = {
-  name: "shadcn",
-  email: "m@example.com",
-  avatar: "/avatars/shadcn.jpg",
-};
-
 const items = [
   {
     title: "Home",
@@ -58,8 +52,8 @@ const items = [
     icon: Search,
   },
   {
-    title: "Settings",
-    url: "settings",
+    title: "Profile",
+    url: "profile",
     icon: Settings,
   },
 ];
@@ -87,7 +81,7 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={user} />
+        <NavUser />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

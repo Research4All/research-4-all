@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router";
 
@@ -30,31 +30,13 @@ const INTEREST_OPTIONS = [
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
-export function EditProfile() {
+export function Onboarding() {
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState<"Student" | "Mentor" | null>(
     null
   );
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  //   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetch(`${BACKEND_URL}/api/users/profile`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.role) setSelectedRole(data.role);
-        if (data.interests) setSelectedInterests(data.interests);
-      })
-      .catch((error) => {
-        console.error("Error fetching profile:", error);
-      });
-  }, []);
 
   const toggleInterest = (interest: string) => {
     if (selectedInterests.includes(interest)) {
@@ -64,39 +46,54 @@ export function EditProfile() {
     }
   };
 
-  const handleSave = () => {
-    fetch(`${BACKEND_URL}/api/users/profile`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        role: selectedRole,
-        interests: selectedInterests,
-      }),
-      credentials: "include",
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (!data.error) {
-          console.log("Interests saved successfully:", data);
-        } else {
-          console.error("Error saving interests:", data.error);
-        }
-      })
-      .catch((error) => {
-        console.error("Error saving interests:", error);
+  const handleSubmit = async () => {
+    if (!selectedRole) {
+      setError("Please select a role.");
+      return;
+    }
+    if (selectedInterests.length === 0) {
+      setError("Please select at least one interest.");
+      return;
+    }
+    setError(null);
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/users/onboarding`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          role: selectedRole,
+          interests: selectedInterests,
+        }),
+        credentials: "include",
       });
+      const data = await response.json();
+
+      if (response.ok) {
+        navigate("/");
+      } else {
+        setError(data.error || "Failed to complete onboarding");
+      }
+    } catch (error) {
+      console.error("Error during onboarding:", error);
+      setError("Network error. Please try again.");
+    }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center p-4">
-      <div className="w-full bg-white rounded-lg shadow-md p-8">
-        <h1 className="font-bold mb-4 text-center">Edit Profile</h1>
+    <div className="min-h-screen flex items-center justify-center p-4">
+      <div className="w-full max-w-2xl bg-white rounded-lg shadow-md p-8">
+        <div className="text-center mb-8">
+          <h1 className="text-2xl font-bold mb-4">Welcome to Research4All!</h1>
+          <p className="text-muted-foreground">
+            Let's get to know you better to personalize your experience.
+          </p>
+        </div>
 
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Role</h2>
-          <div className="flex gap-4">
+          <h2 className="text-xl font-semibold mb-4">Select Your Role</h2>
+          <div className="flex justify-center gap-4">
             <Button
               variant={selectedRole === "Student" ? "default" : "outline"}
               onClick={() => setSelectedRole("Student")}
@@ -113,14 +110,12 @@ export function EditProfile() {
             </Button>
           </div>
         </div>
-
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4">Interests</h2>
+          <h2 className="text-xl font-semibold mb-4">Select Your Interests</h2>
           <p className="mb-4 text-muted-foreground">
             Select all fields that interest you. This will help us recommend
             relevant papers!
           </p>
-
           <div className="flex flex-wrap gap-2">
             {INTEREST_OPTIONS.map((interest) => (
               <Button
@@ -128,7 +123,7 @@ export function EditProfile() {
                 className="cursor-pointer"
                 type="button"
                 variant={
-                  selectedInterests.includes(interest) ? "secondary" : "outline"
+                  selectedInterests.includes(interest) ? "default" : "outline"
                 }
                 onClick={() => toggleInterest(interest)}
               >
@@ -137,23 +132,15 @@ export function EditProfile() {
             ))}
           </div>
         </div>
+        {error && (
+          <div className="mb-4 p-3 text-red-700 border border-red-400 rounded">
+            {error}
+          </div>
+        )}
 
-        <div className="flex gap-4 justify-center">
-          <Button
-            className="cursor-pointer px=8 py-2"
-            type="button"
-            variant="default"
-            onClick={handleSave}
-          >
-            Save Changes
-          </Button>
-          <Button
-            className="cursor-pointer px-8 py-2"
-            type="button"
-            variant="outline"
-            onClick={() => navigate("/")}
-          >
-            Cancel
+        <div className="flex justify-center">
+          <Button onClick={handleSubmit} className="cursor-pointer px-8 py-2">
+            Complete Setup
           </Button>
         </div>
       </div>
