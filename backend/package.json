@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "npx nodemon src/index.ts",
+    "start:fastapi": "cd fastapi && fastapi dev main.py",
+    "start:all": "concurrently \"npm run start\" \"npm run start:fastapi\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

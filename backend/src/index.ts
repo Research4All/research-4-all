@@ -8,6 +8,7 @@ dotenv.config();
 const PORT: number = Number(process.env.PORT) || 5000;
 const FRONTEND_URL: string =
   process.env.FRONTEND_URL || "http://localhost:5173";
+const FASTAPI_URL: string = process.env.FASTAPI_URL || "http://localhost:8000";
 
 // Connect to the database
 connectDB();
@@ -16,6 +17,7 @@ connectDB();
 import authRouter from "./routes/auth";
 import paperRouter from "./routes/paper";
 import userRouter from "./routes/user";
+import axios from "axios";
 
 const app: Application = express();
 app.use(
@@ -46,7 +48,7 @@ const authMiddleware = (req: any, res: Response, next: any) => {
   if (req.session.user) {
     next();
   } else {
-    res.status(401).json({ error: "Unauthorized" })
+    res.status(401).json({ error: "Unauthorized" });
   }
 };
 
@@ -57,6 +59,15 @@ app.use("/api/users", authMiddleware, userRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello, World!");
+});
+
+app.get("/data_from_fastapi", async (req, res) => {
+  try {
+    const response = await axios.get(`${FASTAPI_URL}/`);
+    res.json(response.data);
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch data from FastAPI" });
+  }
 });
 
 app.listen(PORT, () => {
