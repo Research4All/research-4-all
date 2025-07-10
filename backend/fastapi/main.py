@@ -14,21 +14,28 @@ class Paper(BaseModel):
     abstract: Optional[str] = Field(None, description="Abstract of the paper")
     url: Optional[str] = Field(None, description="URL to the paper")
     openAccessPdf: Optional[Dict[str, Any]] = Field(None, description="Open access PDF information")
+    
+class User(BaseModel):
+    interests: List[str] = Field(..., description="List of interests as strings")
 
-class RecommendationRequest(BaseModel):
+class PaperRecommendationRequest(BaseModel):
     user_interests: List[str] = Field(..., description="List of user interests as strings")
     papers: List[Paper] = Field(..., description="List of papers with their fields of study")
     
+class UserRecommendationRequest(BaseModel):
+    user_interests: List[str] = Field(..., description="List of user interests as strings")
+    users: List[User] = Field(..., description="List of users with their interests and other metadata")
+    
 class RecommendationResponse(BaseModel):
     similarities: List[float] = Field(..., description="List of similarity scores for each paper")
-    total_papers: int = Field(..., description="Total number of papers considered for recommendation")
+    total_items: int = Field(..., description="Total number of items considered for recommendation")
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
 
 @app.post("/recommend-papers", response_model=RecommendationResponse)
-async def recommend_papers(request: RecommendationRequest):
+async def recommend_papers(request: PaperRecommendationRequest):
     vectorizer = TfidfVectorizer()
 
     user_profile = " ".join(request.user_interests)
@@ -65,5 +72,33 @@ async def recommend_papers(request: RecommendationRequest):
     
     return RecommendationResponse(
         similarities=boosted_similarities,
-        total_papers=len(request.papers)
+        total_items=len(request.papers)
+    )
+    
+@app.post("/recommend-users", response_model=RecommendationResponse)
+async def recommend_users(request: UserRecommendationRequest):
+    vectorizer = TfidfVectorizer()
+    
+    user_profile = " ".join(request.user_interests)
+    
+    mentor_interests = []
+    
+    for user in request.users:
+        if user.interests:
+            interest_text = ' '.join(user.interests)
+        else: 
+            interest_text = ""
+        mentor_interests.append(interest_text)
+            
+    all_interests = [user_profile] + mentor_interests
+    tfidf_matrix = vectorizer.fit_transform(all_interests)
+    
+    user_vector = tfidf_matrix[0:1]
+    mentor_vectors = tfidf_matrix[1:]
+    
+    similarities = cosine_similarity(user_vector, mentor_vectors)
+    
+    return RecommendationResponse(
+        similarities=similarities[0].tolist(),
+        total_items=len(request.users)
     )
