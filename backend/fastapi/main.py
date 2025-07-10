@@ -1,5 +1,4 @@
 from fastapi import FastAPI
-import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from pydantic import BaseModel, Field
@@ -41,8 +40,14 @@ async def recommend_papers(request: PaperRecommendationRequest):
     user_profile = " ".join(request.user_interests)
 
     paper_fields = []
-    OPEN_ACCESS_BOOST = 0.1 # Prefer open access papers
+    OPEN_ACCESS_BOOST = 0.3 # Prefer open access papers
 
+    if not request.papers:
+        return RecommendationResponse(
+            similarities=[],
+            total_items=0
+        )
+        
     for paper in request.papers:
         if paper.fieldsOfStudy:
             field_text = ' '.join(paper.fieldsOfStudy)
@@ -56,6 +61,7 @@ async def recommend_papers(request: PaperRecommendationRequest):
     user_vector = tfidf_matrix[0:1]
     paper_vectors = tfidf_matrix[1:]
 
+    # TODO: cache similarity results 
     similarities = cosine_similarity(user_vector, paper_vectors)
     
     boosted_similarities = []
