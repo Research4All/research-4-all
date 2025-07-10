@@ -8,12 +8,12 @@ from typing import List, Dict, Any, Optional
 app = FastAPI()
 
 class Paper(BaseModel):
-    id: str = Field(..., alias="_id", description="Unique identifier for the paper")
     paperId: str = Field(..., description="Paper ID from the semantic scholar API")
     title: str = Field(..., description="Title of the paper")
     fieldsOfStudy: List[str] = Field(..., description="List of fields of study related to the paper")
     abstract: Optional[str] = Field(None, description="Abstract of the paper")
     url: Optional[str] = Field(None, description="URL to the paper")
+    openAccessPdf: Optional[Dict[str, Any]] = Field(None, description="Open access PDF information")
 
 class RecommendationRequest(BaseModel):
     user_interests: List[str] = Field(..., description="List of user interests as strings")
@@ -34,6 +34,8 @@ async def recommend_papers(request: RecommendationRequest):
     user_profile = " ".join(request.user_interests)
 
     paper_fields = []
+    OPEN_ACCESS_BOOST = 0.1 # Prefer open access papers
+
     for paper in request.papers:
         if paper.fieldsOfStudy:
             field_text = ' '.join(paper.fieldsOfStudy)
@@ -48,8 +50,20 @@ async def recommend_papers(request: RecommendationRequest):
     paper_vectors = tfidf_matrix[1:]
 
     similarities = cosine_similarity(user_vector, paper_vectors)
-
+    
+    boosted_similarities = []
+    for i, paper in enumerate(request.papers):
+        base_similarity = similarities[0][i]
+        
+        if paper.openAccessPdf and paper.openAccessPdf.get("url"):
+            boosted_similarity = base_similarity + OPEN_ACCESS_BOOST
+            boosted_similarity = min(boosted_similarity, 1.0)
+        else:
+            boosted_similarity = base_similarity
+            
+        boosted_similarities.append(boosted_similarity)
+    
     return RecommendationResponse(
-        similarities=similarities[0].tolist(),
+        similarities=boosted_similarities,
         total_papers=len(request.papers)
     )
