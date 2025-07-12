@@ -9,6 +9,9 @@ import Layout from "./layout";
 import { HomeFeed } from "./components/home-feed";
 import { UserPapers } from "./components/user-papers";
 import { Onboarding } from "./components/onboarding";
+import { PDFRenderer } from "./components/PDFRenderer";
+
+const FASTAPI_URL = import.meta.env.VITE_FASTAPI_URL || "http://localhost:8000";
 
 export default function App() {
   return (
@@ -16,6 +19,7 @@ export default function App() {
       <Route path="/signup" element={<Signup1 heading="Create an account" />} />
       <Route path="/login" element={<Login1 heading="Welcome back" />} />
       <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/pdf" element={<PDFRenderer pdfUrl={`${FASTAPI_URL}/proxy-pdf?url=https://arxiv.org/pdf/2106.14834.pdf`} />} />
       <Route element={<PrivateRoutes />}>
         <Route element={<Layout />}>
           <Route path="/" element={<HomeFeed />} />
