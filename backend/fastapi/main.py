@@ -1,10 +1,21 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
+from fastapi.responses import StreamingResponse
+import httpx
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 class Paper(BaseModel):
     paperId: str = Field(..., description="Paper ID from the semantic scholar API")
@@ -108,3 +119,17 @@ async def recommend_users(request: UserRecommendationRequest):
         similarities=similarities[0].tolist(),
         total_items=len(request.users)
     )
+    
+@app.get("/proxy-pdf")
+async def proxy_pdf(url: str):
+    async with httpx.AsyncClient(follow_redirects=True) as client:
+        response = await client.get(url)
+        if response.status_code == 200:
+            headers = {
+                "Content-Disposition": f"inline; filename=proxy.pdf",
+                "Access-Control-Allow-Origin": "*",
+                "Content-Type": "application/pdf"
+            }
+            return StreamingResponse(response.iter_bytes(), headers=headers, media_type="application/pdf")
+        else:
+            return {"error": "Failed to fetch PDF", "status_code": response.status_code}
