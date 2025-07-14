@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Document, Page } from "react-pdf";
 import { pdfjs } from "react-pdf";
+import { AnnotateMenu } from "./AnnotateMenu";
+
 
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker?url";
 pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -20,6 +22,7 @@ const PDFRenderer = ({ pdfUrl }: PDFRendererProps) => {
     setNumPages(numPages);
   };
 
+  // TODO: Use a logger for better error handling
   const handleDocumentLoadError = (error: Error) => {
     console.error("PDF Load Error:", error);
     setError(`Failed to load PDF: ${error.message}`);
@@ -47,6 +50,7 @@ const PDFRenderer = ({ pdfUrl }: PDFRendererProps) => {
 
   return (
     <div className="flex flex-col items-center">
+      <AnnotateMenu />
       <div className="w-full max-w-6xl h-5/6 overflow-auto">
         <Document
           file={pdfUrl}
