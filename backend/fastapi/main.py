@@ -6,15 +6,18 @@ from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
 from fastapi.responses import StreamingResponse
 import httpx
+import os
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=[
+        os.getenv("FRONTEND_URL", "http://localhost:5173"), 
+        os.getenv("BACKEND_URL", "http://localhost:3000")], 
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["GET", "POST"], 
+    allow_headers=["Content-Type", "Authorization"],
 )
 
 class Paper(BaseModel):
