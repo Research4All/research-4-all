@@ -47,31 +47,34 @@ const PDFRenderer = ({ pdfUrl }: PDFRendererProps) => {
   };
 
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col h-screen bg-gray-100">
       <AnnotateMenu />
-      <div className="w-full max-w-6xl h-5/6 overflow-auto">
-        <Document
-          file={pdfUrl}
-          onLoadSuccess={handleDocumentLoadSuccess}
-          onLoadError={handleDocumentLoadError}
-          loading={<div>Loading PDF...</div>}
-          error={<div>Error loading PDF.</div>}
-        >
-          <Page
-            pageNumber={currentPage}
-            renderTextLayer={true}
-            renderAnnotationLayer={false}
-            width={window.innerWidth * 0.8}
-          />
-        </Document>
+      <div className="flex-1 flex justify-center overflow-auto py-8">
+        <div className="bg-white shadow-lg overflow-auto">
+          <Document
+            file={pdfUrl}
+            onLoadSuccess={handleDocumentLoadSuccess}
+            onLoadError={handleDocumentLoadError}
+            loading={<div>Loading PDF...</div>}
+            error={<div>Error loading PDF.</div>}
+          >
+            <Page
+              pageNumber={currentPage}
+              renderTextLayer={true}
+              renderAnnotationLayer={false}
+              scale={1.2}
+              className="shadow-md"
+            />
+          </Document>
+        </div>
       </div>
 
       {numPages && numPages > 1 && (
-        <div className="flex items-center gap-4 mt-4">
+        <div className="flex items-center justify-center gap-4 py-4 bg-white border-t shadow-sm">
           <button
             onClick={() => handlePageChange(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+            className="cursor-pointer px-6 py-2 bg-blue-500 text-white rounded-md disabled:opacity-50 hover:bg-blue-600 transition-colors"
           >
             Previous
           </button>
@@ -81,7 +84,7 @@ const PDFRenderer = ({ pdfUrl }: PDFRendererProps) => {
           <button
             onClick={() => handlePageChange(currentPage + 1)}
             disabled={currentPage >= numPages}
-            className="px-4 py-2 bg-blue-500 text-white rounded disabled:opacity-50"
+            className="cursor-pointer px-6 py-2 bg-blue-500 text-white rounded-md disabled:opacity-50 hover:bg-blue-600 transition-colors"
           >
             Next
           </button>
