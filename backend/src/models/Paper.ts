@@ -1,4 +1,4 @@
-import { Schema, model, Document } from "mongoose";
+import { Schema, model, Document, Types } from "mongoose";
 
 export interface IPaper extends Document {
   paperId: string;
@@ -14,6 +14,8 @@ export interface IPaper extends Document {
   publicationDate?: String;
   publicationTypes?: string[];
   authors?: string[];
+  annotations?: Types.ObjectId[];
+  highlights?: Types.ObjectId[]; 
 }
 
 const paperSchema = new Schema<IPaper>(

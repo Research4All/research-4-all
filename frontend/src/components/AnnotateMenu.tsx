@@ -9,6 +9,14 @@ interface Annotation {
   timestamp: Date;
 }
 
+interface Highlight {
+  id: string;
+  text: string;
+  position: { x: number; y: number };
+  timestamp: Date;
+  color?: string; // Optional color for different highlight types
+}
+
 const AnnotateMenu = () => {
   const [selection, setSelection] = useState<string>();
   const [position, setPosition] = useState<Record<string, number>>();
@@ -16,6 +24,7 @@ const AnnotateMenu = () => {
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [annotations, setAnnotations] = useState<Annotation[]>([]);
+  const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
 
   function onSelectStart() {
@@ -76,7 +85,18 @@ const AnnotateMenu = () => {
   }, []);
 
   function onHighlight() {
-    if (!range) return;
+    if (!range || !selection || !position) return;
+
+    const newHighlight: Highlight = {
+      id: Date.now().toString(),
+      text: selection,
+      position: { x: position.x, y: position.y },
+      timestamp: new Date(),
+      color: 'yellow'
+    };
+
+    setHighlights(prev => [...prev, newHighlight]);
+
 
     document.getSelection()?.removeAllRanges();
 
