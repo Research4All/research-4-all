@@ -1,11 +1,11 @@
-import { Schema, model, Document, Types } from "mongoose";
+import { Schema, model, Document } from "mongoose";
 
 export interface IHighlight extends Document {
-    text: string;
-    position: { x: number; y: number };
-    color?: string; // Optional color for different highlight types
-    paperId: Types.ObjectId;
-    userId: Types.ObjectId;
+  text: string;
+  position: { x: number; y: number };
+  color?: string; // Optional color for different highlight types
+  paperId: Schema.Types.ObjectId;
+  userId: Schema.Types.ObjectId;
 }
 const highlightSchema = new Schema<IHighlight>(
   {
@@ -23,6 +23,16 @@ const highlightSchema = new Schema<IHighlight>(
       type: String,
       enum: ["yellow", "green", "blue", "pink"],
       default: "yellow",
+    },
+    paperId: {
+      type: Schema.Types.ObjectId,
+      ref: "Paper",
+      required: [true, "Paper ID is required"],
+    },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, "User ID is required"],
     },
   },
   {

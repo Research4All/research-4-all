@@ -15,7 +15,7 @@ export interface IPaper extends Document {
   publicationTypes?: string[];
   authors?: string[];
   annotations?: Types.ObjectId[];
-  highlights?: Types.ObjectId[]; 
+  highlights?: Types.ObjectId[];
 }
 
 const paperSchema = new Schema<IPaper>(
@@ -59,6 +59,16 @@ const paperSchema = new Schema<IPaper>(
     },
     authors: {
       type: [String],
+      default: [],
+    },
+    annotations: {
+      type: [Schema.Types.ObjectId],
+      ref: "Annotation",
+      default: [],
+    },
+    highlights: {
+      type: [Schema.Types.ObjectId],
+      ref: "Highlight",
       default: [],
     },
   },
