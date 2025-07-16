@@ -17,6 +17,8 @@ connectDB();
 import authRouter from "./routes/auth";
 import paperRouter from "./routes/paper";
 import userRouter from "./routes/user";
+import annotationRouter from "./routes/annotation";
+import highlightRouter from "./routes/highlight";
 import axios from "axios";
 
 const app: Application = express();
@@ -56,6 +58,8 @@ app.use(session(sessionConfig));
 app.use("/api/auth", authRouter);
 app.use("/api/papers", paperRouter);
 app.use("/api/users", authMiddleware, userRouter);
+app.use("/api/annotations", authMiddleware, annotationRouter);
+app.use("/api/highlights", authMiddleware, highlightRouter);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("Hello, World!");
