@@ -122,7 +122,9 @@ async def recommend_users(request: UserRecommendationRequest):
         similarities=similarities[0].tolist(),
         total_items=len(request.users)
     )
-    
+
+# Proxy PDF endpoint
+# Needed to avoid CORS issues when fetching PDFs from semantic scholar API for rendering in the frontend
 @app.get("/proxy-pdf")
 async def proxy_pdf(url: str):
     async with httpx.AsyncClient(follow_redirects=True) as client:
