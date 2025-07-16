@@ -117,11 +117,8 @@ const AnnotateMenu = () => {
     document.getSelection()?.removeAllRanges();
     
     const spanElement = document.createElement("span");
-    spanElement.className = "annotated-text relative";
+    spanElement.className = "annotated-text relative bg-amber-100 border-b-2 border-amber-500 cursor-pointer";
     spanElement.setAttribute("data-annotation-id", newAnnotation.id);
-    spanElement.style.backgroundColor = "#fef3c7";
-    spanElement.style.borderBottom = "2px solid #f59e0b";
-    spanElement.style.cursor = "pointer";
 
     spanElement.addEventListener('click', (e) => {
       e.preventDefault();
