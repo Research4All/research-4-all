@@ -2,9 +2,9 @@ import { Schema, model, Document } from "mongoose";
 
 export interface IHighlight extends Document {
   text: string;
-  position: { x: number; y: number };
+  range: { startContainer: string, startOffset: number, endContainer: string, endOffset: number };
   color?: string; // Optional color for different highlight types
-  paperId: Schema.Types.ObjectId;
+  paperMongoId: Schema.Types.ObjectId;
   userId: Schema.Types.ObjectId;
 }
 const highlightSchema = new Schema<IHighlight>(
@@ -13,18 +13,21 @@ const highlightSchema = new Schema<IHighlight>(
       type: String,
       required: [true, "Text is required"],
     },
-    position: {
+    range: {
       type: {
-        x: { type: Number, required: [true, "X position is required"] },
-        y: { type: Number, required: [true, "Y position is required"] },
+        startContainer: { type: String, required: [true, "Start container is required"] },
+        startOffset: { type: Number, required: [true, "Start offset is required"] },
+        endContainer: { type: String, required: [true, "End container is required"] },
+        endOffset: { type: Number, required: [true, "End offset is required"] },
       },
+      required: [true, "Range is required"],
     },
     color: {
       type: String,
       enum: ["yellow", "green", "blue", "pink"],
       default: "yellow",
     },
-    paperId: {
+    paperMongoId: {
       type: Schema.Types.ObjectId,
       ref: "Paper",
       required: [true, "Paper ID is required"],
