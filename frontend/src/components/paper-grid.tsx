@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 interface Paper {
   paperId: string;
   title: string;
@@ -20,6 +22,19 @@ interface PaperGridProps {
 }
 
 export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
+  const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const openModal = (paper: Paper) => {
+    setSelectedPaper(paper);
+    setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setSelectedPaper(null);
+  };
+
   return (
     <div>
       {papers.length > 0 ? (
@@ -40,14 +55,12 @@ export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
                 )}
               </p>
               {paper.openAccessPdf?.url && (
-                <a
-                  href={paper.openAccessPdf.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline"
+                <button
+                  onClick={() => openModal(paper)}
+                  className="text-blue-500 hover:underline cursor-pointer bg-none border-none p-0"
                 >
-                  Open Access PDF
-                </a>
+                  View PDF
+                </button>
               )}
               <div className="mt-2">
                 <button
@@ -64,6 +77,31 @@ export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
         </div>
       ) : (
         <p>No papers found.</p>
+      )}
+
+      {showModal && selectedPaper?.openAccessPdf?.url && (
+        <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg w-full max-w-6xl h-5/6 flex flex-col">
+            <div className="flex justify-between items-center p-4 border-b">
+              <h2 className="text-xl font-semibold truncate pr-4">
+                {selectedPaper.title}
+              </h2>
+              <button
+                onClick={closeModal}
+                className="cursor-pointer text-gray-500 hover:text-gray-700 text-2xl font-bold"
+              >
+                ×
+              </button>
+            </div>
+            <div className="flex-1 p-4">
+              <iframe
+                src={selectedPaper.openAccessPdf.url}
+                className="w-full h-full border-0"
+                title={`PDF: ${selectedPaper.title}`}
+              />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
