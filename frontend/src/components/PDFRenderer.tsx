@@ -16,8 +16,6 @@ const PDFRenderer = ({ pdfUrl }: PDFRendererProps) => {
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [error, setError] = useState<string | null>(null);
 
-  console.log("PDF URL:", pdfUrl);
-
   const handleDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
   };
