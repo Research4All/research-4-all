@@ -1,12 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useImperativeHandle, forwardRef } from "react";
 import { Highlighter, MessageSquareText, X } from "lucide-react";
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+
 interface Annotation {
-  id: string;
+  id?: string;
   text: string;
   comment: string;
   position: { x: number; y: number };
   timestamp: Date;
+  range?: {
+    startOffset: number;
+    endOffset: number;
+    nodeData: string;
+    nodeHTML: string;
+    nodeTagName: string;
+  };
+  _id?: string;
 }
 
 interface Highlight {
@@ -17,15 +27,145 @@ interface Highlight {
   color?: string; // Optional color for different highlight types
 }
 
-const AnnotateMenu = () => {
+function serializeRange(range: Range) {
+  const saveNode = range.startContainer;
+  const startOffset = range.startOffset;
+  const endOffset = range.endOffset;
+  const nodeData = (saveNode.nodeType === Node.TEXT_NODE) ? (saveNode as Text).data : ''
+  const parentElement = saveNode.parentElement;
+  const nodeHTML = parentElement ? parentElement.innerHTML : '';
+  const nodeTagName = parentElement ? parentElement.tagName : '';
+  return {
+    startOffset,
+    endOffset,
+    nodeData,
+    nodeHTML,
+    nodeTagName,
+  };
+}
+
+function deserializeRange(rangeData: {
+  startOffset: number;
+  endOffset: number;
+  nodeData: string;
+  nodeHTML: string;
+  nodeTagName: string;
+}): Range | null {
+  const tagList = Array.from(document.getElementsByTagName(rangeData.nodeTagName));
+
+  let foundElement: Element | null = null;
+  for (const element of tagList) {
+    if (element.innerHTML === rangeData.nodeHTML) {
+      foundElement = element;
+      break;
+    }
+  }
+  if (!foundElement) {
+    // throw new Error("Element not found for deserialization");
+    return null;
+  }
+  
+  let foundNode: ChildNode | null = null;
+  for (const node of foundElement.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE && (node as Text).data === rangeData.nodeData) {
+      foundNode = node;
+      break;
+    }
+  }
+  if (!foundNode) {
+    // throw new Error("Text node not found for deserialization");
+    return null;
+  }
+
+  const range = document.createRange();
+  range.setStart(foundNode, rangeData.startOffset);
+  range.setEnd(foundNode, rangeData.endOffset);
+  return range;
+}
+
+const PAPER_MONGO_ID = '68793152df3083c95ebf1a46' // placeholder ID for testing
+
+export interface AnnotateMenuRef {
+  handleTextLayerReady: () => void;
+}
+
+const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
   const [selection, setSelection] = useState<string>();
   const [position, setPosition] = useState<Record<string, number>>();
   const [range, setRange] = useState<Range>();
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [annotations, setAnnotations] = useState<Annotation[]>([]);
-  const [highlights, setHighlights] = useState<Highlight[]>([]);
   const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
+  const [loadedAnnotations, setLoadedAnnotations] = useState<Annotation[]>([]);
+  const [textLayerReady, setTextLayerReady] = useState(false);
+
+  useEffect(() => {
+    async function fetchAnnotations() {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`, { credentials: 'include' });
+        const data = await response.json();
+        const annotations: Annotation[] = (data.annotations || []).map((a: Annotation) => ({
+          ...a,
+          timestamp: new Date(a.timestamp),
+        }))
+        setLoadedAnnotations(annotations);
+      } catch {
+        console.error("Failed to fetch annotations");
+      }
+    }
+    fetchAnnotations();
+  }, []);
+
+  useEffect(() => {
+    if (textLayerReady && loadedAnnotations.length > 0) {
+      renderAnnotations(loadedAnnotations);
+    }
+  }, [textLayerReady, loadedAnnotations]);
+
+  const renderAnnotations = (annotations: Annotation[]) => {
+    annotations.forEach((annotation: Annotation) => {
+      if (!annotation.range) return;
+      const range = deserializeRange(annotation.range);
+      if (range) {
+        const spanElement = document.createElement("span");
+        spanElement.className = "annotated-text relative bg-amber-100 border-b-2 border-amber-500 cursor-pointer z-5000";
+        spanElement.setAttribute("data-annotation-id", annotation._id || annotation.id || 'temp-id');
+
+        spanElement.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const rect = spanElement.getBoundingClientRect();
+          const pdfContainer = document.querySelector('.bg-white.shadow-lg');
+          const pdfContainerRect = pdfContainer?.getBoundingClientRect();
+          const updatedAnnotation = {
+            ...annotation,
+            position: {
+              x: pdfContainerRect ? pdfContainerRect.right + 20 : rect.right + 20,
+              y: rect.top + window.scrollY - 30
+            }
+          };
+          setActiveAnnotation(updatedAnnotation);
+        });
+
+        try {
+          range.surroundContents(spanElement);
+        } catch {
+          const contents = range.extractContents();
+          spanElement.appendChild(contents);
+          range.insertNode(spanElement);
+        }
+      }
+    });
+  };
+
+  const handleTextLayerReady = () => {
+    setTextLayerReady(true);
+  };
+
+  useImperativeHandle(ref, () => ({
+    handleTextLayerReady,
+  }));
+
 
   function onSelectStart() {
     if (!showCommentBox) {
@@ -95,8 +235,6 @@ const AnnotateMenu = () => {
       color: 'yellow'
     };
 
-    setHighlights(prev => [...prev, newHighlight]);
-
 
     document.getSelection()?.removeAllRanges();
 
@@ -123,22 +261,35 @@ const AnnotateMenu = () => {
 
   function onSaveComment() {
     if (!selection || !position || !commentText.trim() || !range) return;
+    const serializedRange = serializeRange(range);
 
     const newAnnotation: Annotation = {
-      id: Date.now().toString(),
       text: selection,
       comment: commentText,
       position: { x: position.x, y: position.y },
       timestamp: new Date(),
     };
 
-    setAnnotations(prev => [...prev, newAnnotation]);
+    fetch(`${BACKEND_URL}/api/annotations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        text: selection,
+        comment: commentText,
+        range: serializedRange,
+        position: { x: position.x, y: position.y },
+        paperMongoId: PAPER_MONGO_ID,
+      }),
+    })
     
     document.getSelection()?.removeAllRanges();
     
     const spanElement = document.createElement("span");
     spanElement.className = "annotated-text relative bg-amber-100 border-b-2 border-amber-500 cursor-pointer";
-    spanElement.setAttribute("data-annotation-id", newAnnotation.id);
+    spanElement.setAttribute("data-annotation-id", newAnnotation.id || 'temp-id');
 
     spanElement.addEventListener('click', (e) => {
       e.preventDefault();
@@ -160,7 +311,7 @@ const AnnotateMenu = () => {
 
     try {
       range.surroundContents(spanElement);
-    } catch (error) {
+    } catch {
       const contents = range.extractContents();
       spanElement.appendChild(contents);
       range.insertNode(spanElement);
@@ -282,6 +433,6 @@ const AnnotateMenu = () => {
       )}
     </div>
   );
-};
+});
 
 export { AnnotateMenu };

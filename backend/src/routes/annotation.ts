@@ -14,18 +14,6 @@ router.post("/", async (req: any, res: any) => {
       });
     }
 
-    if (
-      !range.startContainer ||
-      typeof range.startOffset !== "number" ||
-      !range.endContainer ||
-      typeof range.endOffset !== "number"
-    ) {
-      return res.status(400).json({
-        error:
-          "Range must include startContainer, startOffset, endContainer, and endOffset",
-      });
-    }
-
     const annotation = new Annotation({
       text,
       comment,
