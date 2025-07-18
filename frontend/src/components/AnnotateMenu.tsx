@@ -1,7 +1,7 @@
 import { useEffect, useState, useImperativeHandle, forwardRef } from "react";
-import { Highlighter, MessageSquareText, X } from "lucide-react";
+import { Highlighter, MessageSquareText, X, RotateCcw } from "lucide-react";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 interface Annotation {
   id?: string;
@@ -154,7 +154,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
       const range = deserializeRange(annotation.range);
       if (range) {
         const spanElement = document.createElement("span");
-        spanElement.className = "annotated-text relative bg-amber-100 border-b-2 border-amber-500 cursor-pointer z-5000";
+        spanElement.className = "annotated-text relative bg-amber-100 border-b-2 border-amber-500 cursor-pointer z-50";
         spanElement.setAttribute("data-annotation-id", annotation._id || annotation.id || 'temp-id');
 
         spanElement.addEventListener('click', (e) => {
@@ -381,10 +381,79 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
     setCommentText("");
   }
 
-  
+  const handleReset = async () => {
+    if (!confirm("Are you sure you want to reset all annotations and highlights? This action cannot be undone.")) {
+      return;
+    }
+
+    try {
+      const annotationsResponse = await fetch(`${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`, {
+        method: "GET",
+        credentials: 'include',
+      });
+      const annotationsData = await annotationsResponse.json();
+      const annotations = annotationsData.annotations || [];
+
+      for (const annotation of annotations) {
+        await fetch(`${BACKEND_URL}/api/annotations/${annotation._id}`, {
+          method: "DELETE",
+          credentials: 'include',
+        });
+      }
+
+      const highlightsResponse = await fetch(`${BACKEND_URL}/api/highlights/paper/${PAPER_MONGO_ID}`, {
+        method: "GET",
+        credentials: 'include',
+      });
+      const highlightsData = await highlightsResponse.json();
+      const highlights = highlightsData.highlights || [];
+
+      for (const highlight of highlights) {
+        await fetch(`${BACKEND_URL}/api/highlights/${highlight._id}`, {
+          method: "DELETE",
+          credentials: 'include',
+        });
+      }
+
+      setLoadedAnnotations([]);
+      setLoadedHighlights([]);
+      setActiveAnnotation(null);
+
+      document.querySelectorAll('.highlighted-text').forEach(element => {
+        const parent = element.parentNode;
+        if (parent) {
+          parent.replaceChild(document.createTextNode(element.textContent || ''), element);
+          parent.normalize(); 
+        }
+      });
+
+      document.querySelectorAll('.annotated-text').forEach(element => {
+        const parent = element.parentNode;
+        if (parent) {
+          parent.replaceChild(document.createTextNode(element.textContent || ''), element);
+          parent.normalize(); 
+        }
+      });
+
+      alert("All highlights and annotations have been reset.");
+    } catch (error) {
+      console.error("Error resetting annotations and highlights:", error);
+      alert("Failed to reset annotations and highlights. Please try again later.");
+    }
+  }
 
   return (
     <div role="dialog" aria-labelledby="share" aria-haspopup="dialog">
+      <div className="fixed top-4 right-0 p-4 z-50">
+        <button
+          onClick={handleReset}
+          className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors shadow-lg"
+          title="Delete all highlights and annotations"
+        >
+          Reset
+          <RotateCcw className="w-4 h-4" />
+        </button>
+      </div>
       {selection && position && !showCommentBox && (
         <div
           className="
