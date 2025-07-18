@@ -20,11 +20,19 @@ interface Annotation {
 }
 
 interface Highlight {
-  id: string;
+  id?: string;
   text: string;
   position: { x: number; y: number };
   timestamp: Date;
+  range?: {
+    startOffset: number;
+    endOffset: number;
+    nodeData: string;
+    nodeHTML: string;
+    nodeTagName: string;
+  }
   color?: string; // Optional color for different highlight types
+  _id?: string;
 }
 
 function serializeRange(range: Range) {
@@ -97,6 +105,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
   const [commentText, setCommentText] = useState("");
   const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
   const [loadedAnnotations, setLoadedAnnotations] = useState<Annotation[]>([]);
+  const [loadedHighlights, setLoadedHighlights] = useState<Highlight[]>([]);
   const [textLayerReady, setTextLayerReady] = useState(false);
 
   useEffect(() => {
@@ -113,14 +122,31 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
         console.error("Failed to fetch annotations");
       }
     }
+    async function fetchHighlights() {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/highlights/paper/${PAPER_MONGO_ID}`, { credentials: 'include' });
+        const data = await response.json();
+        const highlights: Highlight[] = (data.highlights || []).map((h: Highlight) => ({
+          ...h,
+          timestamp: new Date(h.timestamp),
+        }))
+        setLoadedHighlights(highlights);
+      } catch {
+        console.error("Failed to fetch highlights");
+      }
+    }
     fetchAnnotations();
+    fetchHighlights();
   }, []);
 
   useEffect(() => {
     if (textLayerReady && loadedAnnotations.length > 0) {
       renderAnnotations(loadedAnnotations);
     }
-  }, [textLayerReady, loadedAnnotations]);
+    if (textLayerReady && loadedHighlights.length > 0) {
+      renderHighlights(loadedHighlights);
+    }
+  }, [textLayerReady, loadedAnnotations, loadedHighlights]);
 
   const renderAnnotations = (annotations: Annotation[]) => {
     annotations.forEach((annotation: Annotation) => {
@@ -153,6 +179,25 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
           const contents = range.extractContents();
           spanElement.appendChild(contents);
           range.insertNode(spanElement);
+        }
+      }
+    });
+  };
+
+  const renderHighlights = (highlights: Highlight[]) => {
+    highlights.forEach((highlight: Highlight) => {
+      if (!highlight.range) return;
+      const range = deserializeRange(highlight.range);
+      if (range) {
+        const markElement = document.createElement("mark");
+        markElement.className = "highlighted-text";
+        markElement.setAttribute("data-highlight-id", highlight._id || highlight.id || 'temp-id');
+        try {
+          range.surroundContents(markElement);
+        } catch {
+          const contents = range.extractContents();
+          markElement.appendChild(contents);
+          range.insertNode(markElement);
         }
       }
     });
@@ -227,14 +272,21 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
   function onHighlight() {
     if (!range || !selection || !position) return;
 
-    const newHighlight: Highlight = {
-      id: Date.now().toString(),
-      text: selection,
-      position: { x: position.x, y: position.y },
-      timestamp: new Date(),
-      color: 'yellow'
-    };
-
+    const serializedRange = serializeRange(range);
+    
+    fetch(`${BACKEND_URL}/api/highlights`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        text: selection,
+        range: serializedRange,
+        color: 'yellow',
+        paperMongoId: PAPER_MONGO_ID,
+      }),
+    });
 
     document.getSelection()?.removeAllRanges();
 
@@ -352,7 +404,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
           </button>
           <div className="w-px bg-gray-600"></div>
           <button 
-            className="flex flex-1 h-full justify-center items-center px-1 hover:bg-gray-700 rounded-r"
+            className="flex flex-1 h-full justify-center items-center px-1 hover:bg-gray-700 rounded-r z-5000"
             onClick={onComment}
             title="Add Comment"
           >
