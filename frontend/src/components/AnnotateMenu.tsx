@@ -1,5 +1,6 @@
 import { useEffect, useState, useImperativeHandle, forwardRef } from "react";
 import { Highlighter, MessageSquareText, X, RotateCcw } from "lucide-react";
+import { io, Socket } from "socket.io-client";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
@@ -17,6 +18,11 @@ interface Annotation {
     nodeTagName: string;
   };
   _id?: string;
+  userId?: {
+    _id: string;
+    username: string;
+    email: string;
+  };
 }
 
 interface Highlight {
@@ -30,7 +36,7 @@ interface Highlight {
     nodeData: string;
     nodeHTML: string;
     nodeTagName: string;
-  }
+  };
   color?: string; // Optional color for different highlight types
   _id?: string;
 }
@@ -39,10 +45,11 @@ function serializeRange(range: Range) {
   const saveNode = range.startContainer;
   const startOffset = range.startOffset;
   const endOffset = range.endOffset;
-  const nodeData = (saveNode.nodeType === Node.TEXT_NODE) ? (saveNode as Text).data : ''
+  const nodeData =
+    saveNode.nodeType === Node.TEXT_NODE ? (saveNode as Text).data : "";
   const parentElement = saveNode.parentElement;
-  const nodeHTML = parentElement ? parentElement.innerHTML : '';
-  const nodeTagName = parentElement ? parentElement.tagName : '';
+  const nodeHTML = parentElement ? parentElement.innerHTML : "";
+  const nodeTagName = parentElement ? parentElement.tagName : "";
   return {
     startOffset,
     endOffset,
@@ -59,7 +66,9 @@ function deserializeRange(rangeData: {
   nodeHTML: string;
   nodeTagName: string;
 }): Range | null {
-  const tagList = Array.from(document.getElementsByTagName(rangeData.nodeTagName));
+  const tagList = Array.from(
+    document.getElementsByTagName(rangeData.nodeTagName)
+  );
 
   let foundElement: Element | null = null;
   for (const element of tagList) {
@@ -72,10 +81,13 @@ function deserializeRange(rangeData: {
     // throw new Error("Element not found for deserialization");
     return null;
   }
-  
+
   let foundNode: ChildNode | null = null;
   for (const node of foundElement.childNodes) {
-    if (node.nodeType === Node.TEXT_NODE && (node as Text).data === rangeData.nodeData) {
+    if (
+      node.nodeType === Node.TEXT_NODE &&
+      (node as Text).data === rangeData.nodeData
+    ) {
       foundNode = node;
       break;
     }
@@ -91,32 +103,44 @@ function deserializeRange(rangeData: {
   return range;
 }
 
-const PAPER_MONGO_ID = '68793152df3083c95ebf1a46' // placeholder ID for testing
+const PAPER_MONGO_ID = "68793152df3083c95ebf1a46"; // placeholder ID for testing
 
 export interface AnnotateMenuRef {
   handleTextLayerReady: () => void;
 }
 
-const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
+const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
   const [selection, setSelection] = useState<string>();
   const [position, setPosition] = useState<Record<string, number>>();
   const [range, setRange] = useState<Range>();
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
+  const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(
+    null
+  );
   const [loadedAnnotations, setLoadedAnnotations] = useState<Annotation[]>([]);
   const [loadedHighlights, setLoadedHighlights] = useState<Highlight[]>([]);
   const [textLayerReady, setTextLayerReady] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const [currentUser, setCurrentUser] = useState<{
+    username: string;
+    email: string;
+  } | null>(null);
 
   useEffect(() => {
     async function fetchAnnotations() {
       try {
-        const response = await fetch(`${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`, { credentials: 'include' });
+        const response = await fetch(
+          `${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`,
+          { credentials: "include" }
+        );
         const data = await response.json();
-        const annotations: Annotation[] = (data.annotations || []).map((a: Annotation) => ({
-          ...a,
-          timestamp: new Date(a.timestamp),
-        }))
+        const annotations: Annotation[] = (data.annotations || []).map(
+          (a: Annotation) => ({
+            ...a,
+            timestamp: new Date(a.timestamp),
+          })
+        );
         setLoadedAnnotations(annotations);
       } catch {
         console.error("Failed to fetch annotations");
@@ -124,19 +148,41 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
     }
     async function fetchHighlights() {
       try {
-        const response = await fetch(`${BACKEND_URL}/api/highlights/paper/${PAPER_MONGO_ID}`, { credentials: 'include' });
+        const response = await fetch(
+          `${BACKEND_URL}/api/highlights/paper/${PAPER_MONGO_ID}`,
+          { credentials: "include" }
+        );
         const data = await response.json();
-        const highlights: Highlight[] = (data.highlights || []).map((h: Highlight) => ({
-          ...h,
-          timestamp: new Date(h.timestamp),
-        }))
+        const highlights: Highlight[] = (data.highlights || []).map(
+          (h: Highlight) => ({
+            ...h,
+            timestamp: new Date(h.timestamp),
+          })
+        );
         setLoadedHighlights(highlights);
       } catch {
         console.error("Failed to fetch highlights");
       }
     }
+    async function fetchCurrentUser() {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/auth/status`, {
+          credentials: "include",
+        });
+        const data = await response.json();
+        if (data.authenticated && data.user) {
+          setCurrentUser({
+            username: data.user.username,
+            email: data.user.email,
+          });
+        }
+      } catch {
+        console.error("Failed to fetch current user");
+      }
+    }
     fetchAnnotations();
     fetchHighlights();
+    fetchCurrentUser();
   }, []);
 
   useEffect(() => {
@@ -148,27 +194,57 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
     }
   }, [textLayerReady, loadedAnnotations, loadedHighlights]);
 
+  useEffect(() => {
+    const s = io(BACKEND_URL, { withCredentials: true });
+    setSocket(s);
+    s.emit("join-docuemnt", PAPER_MONGO_ID);
+
+    s.on("annotation-update", ({ annotation }) => {
+      setLoadedAnnotations((prev) => [
+        ...prev,
+        { ...annotation, timestamp: new Date(annotation.timestamp) },
+      ]);
+    });
+
+    s.on("highlight-update", ({ highlight }) => {
+      setLoadedHighlights((prev) => [
+        ...prev,
+        { ...highlight, timestamp: new Date(highlight.timestamp) },
+      ]);
+    });
+
+    return () => {
+      s.disconnect();
+    };
+  }, []);
+
   const renderAnnotations = (annotations: Annotation[]) => {
     annotations.forEach((annotation: Annotation) => {
       if (!annotation.range) return;
       const range = deserializeRange(annotation.range);
       if (range) {
         const spanElement = document.createElement("span");
-        spanElement.className = "annotated-text relative bg-amber-100 border-b-2 border-amber-500 cursor-pointer z-50";
-        spanElement.setAttribute("data-annotation-id", annotation._id || annotation.id || 'temp-id');
+        spanElement.className =
+          "annotated-text relative bg-amber-100 border-b-2 border-amber-500 cursor-pointer z-50";
+        spanElement.setAttribute(
+          "data-annotation-id",
+          annotation._id || annotation.id || "temp-id"
+        );
 
-        spanElement.addEventListener('click', (e) => {
+        spanElement.addEventListener("click", (e) => {
           e.preventDefault();
           e.stopPropagation();
           const rect = spanElement.getBoundingClientRect();
-          const pdfContainer = document.querySelector('.bg-white.shadow-lg');
+          const pdfContainer = document.querySelector(".bg-white.shadow-lg");
           const pdfContainerRect = pdfContainer?.getBoundingClientRect();
           const updatedAnnotation = {
             ...annotation,
             position: {
-              x: pdfContainerRect ? pdfContainerRect.right + 20 : rect.right + 20,
-              y: rect.top + window.scrollY - 30
-            }
+              x: pdfContainerRect
+                ? pdfContainerRect.right + 20
+                : rect.right + 20,
+              y: rect.top + window.scrollY - 30,
+            },
           };
           setActiveAnnotation(updatedAnnotation);
         });
@@ -191,7 +267,10 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
       if (range) {
         const markElement = document.createElement("mark");
         markElement.className = "highlighted-text";
-        markElement.setAttribute("data-highlight-id", highlight._id || highlight.id || 'temp-id');
+        markElement.setAttribute(
+          "data-highlight-id",
+          highlight._id || highlight.id || "temp-id"
+        );
         try {
           range.surroundContents(markElement);
         } catch {
@@ -210,7 +289,6 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
   useImperativeHandle(ref, () => ({
     handleTextLayerReady,
   }));
-
 
   function onSelectStart() {
     if (!showCommentBox) {
@@ -237,7 +315,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
     const rect = activeSelection.getRangeAt(0).getBoundingClientRect();
 
     setPosition({
-      x: rect.left + (rect.width / 2) - (80 / 2), 
+      x: rect.left + rect.width / 2 - 80 / 2,
       y: rect.top + window.scrollY - 30,
       width: rect.width,
       height: rect.height,
@@ -257,36 +335,46 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
   useEffect(() => {
     function handleDocumentClick(e: MouseEvent) {
       const target = e.target as HTMLElement;
-      
-      if (target.closest('.annotated-text') || target.closest('.annotation-tooltip')) {
+
+      if (
+        target.closest(".annotated-text") ||
+        target.closest(".annotation-tooltip")
+      ) {
         return;
       }
-      
+
       setActiveAnnotation(null);
     }
 
-    document.addEventListener('click', handleDocumentClick);
-    return () => document.removeEventListener('click', handleDocumentClick);
+    document.addEventListener("click", handleDocumentClick);
+    return () => document.removeEventListener("click", handleDocumentClick);
   }, []);
 
   function onHighlight() {
     if (!range || !selection || !position) return;
 
     const serializedRange = serializeRange(range);
-    
+
+    const highlight = {
+      text: selection,
+      range: serializedRange,
+      color: "yellow",
+      paperMongoId: PAPER_MONGO_ID,
+    };
+
     fetch(`${BACKEND_URL}/api/highlights`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: 'include',
-      body: JSON.stringify({
-        text: selection,
-        range: serializedRange,
-        color: 'yellow',
-        paperMongoId: PAPER_MONGO_ID,
-      }),
+      credentials: "include",
+      body: JSON.stringify(highlight),
     });
+
+    if (socket) {
+      console.log("Emitting highlight update to socket");
+      socket.emit("highlight-update", { paperId: PAPER_MONGO_ID, highlight });
+    }
 
     document.getSelection()?.removeAllRanges();
 
@@ -315,11 +403,19 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
     if (!selection || !position || !commentText.trim() || !range) return;
     const serializedRange = serializeRange(range);
 
-    const newAnnotation: Annotation = {
+    const annotation: Annotation = {
       text: selection,
       comment: commentText,
+      range: serializedRange,
       position: { x: position.x, y: position.y },
       timestamp: new Date(),
+      userId: currentUser
+        ? {
+            _id: "",
+            username: currentUser.username,
+            email: currentUser.email,
+          }
+        : undefined,
     };
 
     fetch(`${BACKEND_URL}/api/annotations`, {
@@ -327,37 +423,39 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
       headers: {
         "Content-Type": "application/json",
       },
-      credentials: 'include',
-      body: JSON.stringify({
-        text: selection,
-        comment: commentText,
-        range: serializedRange,
-        position: { x: position.x, y: position.y },
-        paperMongoId: PAPER_MONGO_ID,
-      }),
-    })
-    
-    document.getSelection()?.removeAllRanges();
-    
-    const spanElement = document.createElement("span");
-    spanElement.className = "annotated-text relative bg-amber-100 border-b-2 border-amber-500 cursor-pointer";
-    spanElement.setAttribute("data-annotation-id", newAnnotation.id || 'temp-id');
+      credentials: "include",
+      body: JSON.stringify(annotation),
+    });
 
-    spanElement.addEventListener('click', (e) => {
+    if (socket) {
+      socket.emit("annotation-update", {
+        paperId: PAPER_MONGO_ID,
+        annotation,
+      });
+    }
+
+    document.getSelection()?.removeAllRanges();
+
+    const spanElement = document.createElement("span");
+    spanElement.className =
+      "annotated-text relative bg-amber-100 border-b-2 border-amber-500 cursor-pointer";
+    spanElement.setAttribute("data-annotation-id", annotation.id || "temp-id");
+
+    spanElement.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      
+
       const rect = spanElement.getBoundingClientRect();
-      const pdfContainer = document.querySelector('.bg-white.shadow-lg');
+      const pdfContainer = document.querySelector(".bg-white.shadow-lg");
       const pdfContainerRect = pdfContainer?.getBoundingClientRect();
       const updatedAnnotation = {
-        ...newAnnotation,
+        ...annotation,
         position: {
           x: pdfContainerRect ? pdfContainerRect.right + 20 : rect.right + 20,
-          y: rect.top + window.scrollY - 30
-        }
+          y: rect.top + window.scrollY - 30,
+        },
       };
-      
+
       setActiveAnnotation(updatedAnnotation);
     });
 
@@ -382,36 +480,46 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
   }
 
   const handleReset = async () => {
-    if (!confirm("Are you sure you want to reset all annotations and highlights? This action cannot be undone.")) {
+    if (
+      !confirm(
+        "Are you sure you want to reset all annotations and highlights? This action cannot be undone."
+      )
+    ) {
       return;
     }
 
     try {
-      const annotationsResponse = await fetch(`${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`, {
-        method: "GET",
-        credentials: 'include',
-      });
+      const annotationsResponse = await fetch(
+        `${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
       const annotationsData = await annotationsResponse.json();
       const annotations = annotationsData.annotations || [];
 
       for (const annotation of annotations) {
         await fetch(`${BACKEND_URL}/api/annotations/${annotation._id}`, {
           method: "DELETE",
-          credentials: 'include',
+          credentials: "include",
         });
       }
 
-      const highlightsResponse = await fetch(`${BACKEND_URL}/api/highlights/paper/${PAPER_MONGO_ID}`, {
-        method: "GET",
-        credentials: 'include',
-      });
+      const highlightsResponse = await fetch(
+        `${BACKEND_URL}/api/highlights/paper/${PAPER_MONGO_ID}`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
       const highlightsData = await highlightsResponse.json();
       const highlights = highlightsData.highlights || [];
 
       for (const highlight of highlights) {
         await fetch(`${BACKEND_URL}/api/highlights/${highlight._id}`, {
           method: "DELETE",
-          credentials: 'include',
+          credentials: "include",
         });
       }
 
@@ -419,28 +527,36 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
       setLoadedHighlights([]);
       setActiveAnnotation(null);
 
-      document.querySelectorAll('.highlighted-text').forEach(element => {
+      document.querySelectorAll(".highlighted-text").forEach((element) => {
         const parent = element.parentNode;
         if (parent) {
-          parent.replaceChild(document.createTextNode(element.textContent || ''), element);
-          parent.normalize(); 
+          parent.replaceChild(
+            document.createTextNode(element.textContent || ""),
+            element
+          );
+          parent.normalize();
         }
       });
 
-      document.querySelectorAll('.annotated-text').forEach(element => {
+      document.querySelectorAll(".annotated-text").forEach((element) => {
         const parent = element.parentNode;
         if (parent) {
-          parent.replaceChild(document.createTextNode(element.textContent || ''), element);
-          parent.normalize(); 
+          parent.replaceChild(
+            document.createTextNode(element.textContent || ""),
+            element
+          );
+          parent.normalize();
         }
       });
 
       alert("All highlights and annotations have been reset.");
     } catch (error) {
       console.error("Error resetting annotations and highlights:", error);
-      alert("Failed to reset annotations and highlights. Please try again later.");
+      alert(
+        "Failed to reset annotations and highlights. Please try again later."
+      );
     }
-  }
+  };
 
   return (
     <div role="dialog" aria-labelledby="share" aria-haspopup="dialog">
@@ -472,7 +588,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
             <Highlighter className="w-4 h-4" />
           </button>
           <div className="w-px bg-gray-600"></div>
-          <button 
+          <button
             className="flex flex-1 h-full justify-center items-center px-1 hover:bg-gray-700 rounded-r z-5000"
             onClick={onComment}
             title="Add Comment"
@@ -498,10 +614,12 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
               <X className="w-4 h-4" />
             </button>
           </div>
-          
+
           <div className="mb-3">
             <p className="text-xs text-gray-600 mb-2">Selected text:</p>
-            <p className="text-sm bg-gray-100 p-2 rounded italic">"{selection}"</p>
+            <p className="text-sm bg-gray-100 p-2 rounded italic">
+              "{selection}"
+            </p>
           </div>
 
           <textarea
@@ -538,9 +656,16 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
           }}
         >
           <div className="flex justify-between items-start mb-2">
-            <p className="text-xs text-gray-600">
-              {activeAnnotation.timestamp.toLocaleString()}
-            </p>
+            <div>
+              <p className="text-xs text-gray-600">
+                {activeAnnotation.timestamp.toLocaleString()}
+              </p>
+              {activeAnnotation.userId && (
+                <p className="text-xs text-blue-600 font-medium">
+                  by {activeAnnotation.userId.username}{" "}
+                </p>
+              )}
+            </div>
             <button
               onClick={() => setActiveAnnotation(null)}
               className="text-gray-400 hover:text-gray-600 ml-2"
