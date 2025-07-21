@@ -197,7 +197,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
   useEffect(() => {
     const s = io(BACKEND_URL, { withCredentials: true });
     setSocket(s);
-    s.emit("join-docuemnt", PAPER_MONGO_ID);
+    s.emit("join-document", PAPER_MONGO_ID);
 
     s.on("annotation-update", ({ annotation }) => {
       setLoadedAnnotations((prev) => [
