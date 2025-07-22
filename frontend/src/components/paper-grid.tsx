@@ -1,7 +1,11 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router';
+
+const FASTAPI_URL = import.meta.env.VITE_FASTAPI_URL || "http://localhost:8000";
 
 interface Paper {
   paperId: string;
+  _id?: string;
   title: string;
   abstract?: string;
   url?: string;
@@ -13,17 +17,18 @@ interface Paper {
   fieldsOfStudy?: string[];
   publicationDate: Date;
   publicationTypes?: string[];
-  authors?: string[]; // Optional field for authors
+  authors?: (string | { name: string })[]; // Accepts string or object with name
 }
 
 interface PaperGridProps {
   papers: Paper[];
-  handleSavePaper: (paper: Paper) => void;
+  handleSavePaper: (paper: Paper) => Promise<Paper | undefined>;
 }
 
 export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const navigate = useNavigate();
 
   const openModal = (paper: Paper) => {
     setSelectedPaper(paper);
@@ -86,16 +91,36 @@ export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
               <h2 className="text-xl font-semibold truncate pr-4">
                 {selectedPaper.title}
               </h2>
-              <button
-                onClick={closeModal}
-                className="cursor-pointer text-gray-500 hover:text-gray-700 text-2xl font-bold"
-              >
-                ×
-              </button>
+              <div className="flex gap-2 items-center">
+                <button
+                  onClick={async () => {
+                    try {
+                      const savedPaper = await handleSavePaper(selectedPaper);
+                      if (savedPaper && savedPaper._id) {
+                        navigate(`/pdf-viewer/${savedPaper._id}`);
+                      } else {
+                        alert("Could not get paper ID after saving. Please try again.");
+                      }
+                    } catch (error) {
+                      console.error("Error in handleSavePaper:", error);
+                      alert("Error saving paper. Please try again.");
+                    }
+                  }}
+                  className="cursor-pointer text-blue-500 hover:text-blue-700 text-base font-semibold border border-blue-500 rounded px-3 py-1 bg-white"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={closeModal}
+                  className="cursor-pointer text-gray-500 hover:text-gray-700 text-2xl font-bold"
+                >
+                  ×
+                </button>
+              </div>
             </div>
             <div className="flex-1 p-4">
               <iframe
-                src={selectedPaper.openAccessPdf.url}
+                src={`${FASTAPI_URL}/proxy-pdf?url=${encodeURIComponent(selectedPaper.openAccessPdf.url)}`}
                 className="w-full h-full border-0"
                 title={`PDF: ${selectedPaper.title}`}
               />

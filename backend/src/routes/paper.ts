@@ -198,7 +198,7 @@ router.post("/save", async (req: any, res: any) => {
       user.savedPapers.push(paper._id as (typeof user.savedPapers)[0]);
       await user.save();
     }
-    return res.status(201).json({ message: "Paper saved successfully." });
+    return res.status(201).json({ message: "Paper saved successfully.", paper });
   } catch (error) {
     console.error("Error saving paper:", error);
     return res.status(500).json({ error: "Failed to save paper." });

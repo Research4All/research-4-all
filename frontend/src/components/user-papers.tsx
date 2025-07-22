@@ -15,6 +15,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 export function UserPapers() {
   interface Paper {
     paperId: string;
+    _id?: string;
     title: string;
     abstract?: string;
     url?: string;
@@ -26,7 +27,7 @@ export function UserPapers() {
     fieldsOfStudy?: string[];
     publicationDate: Date;
     publicationTypes?: string[];
-    authors?: string[]; // Optional field for authors
+    authors?: (string | { name: string })[];
   }
 
   const [papers, setPapers] = useState([]);
@@ -53,21 +54,49 @@ export function UserPapers() {
   }, []);
 
   const handleSavePaper = async (paper: Paper) => {
+    const paperToSave = {
+      ...paper,
+      authors: paper.authors
+        ? Array.isArray(paper.authors)
+          ? paper.authors.map(a => typeof a === "string" ? a : (a as { name: string }).name)
+          : []
+        : []
+    };
     try {
       const response = await fetch(`${BACKEND_URL}/api/papers/save`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(paper),
+        body: JSON.stringify(paperToSave),
         credentials: "include",
       });
       const data = await response.json();
       if (response.ok) {
-        console.log("Paper saved successfully:", data);
+        if (data.paper) {
+          return data.paper;
+        }
+        const savedResponse = await fetch(`${BACKEND_URL}/api/papers/saved`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+        const savedData = await savedResponse.json();
+        if (savedResponse.ok) {
+          const foundPaper = (savedData.savedPapers || []).find((p: Paper) => p.paperId === paper.paperId);
+          if (foundPaper) {
+            return foundPaper;
+          }
+        }
+      } else {
+        throw new Error(data.error || "Failed to save paper");
       }
+      return undefined;
     } catch (error) {
-      console.error("Error saving paper:", error);
+      throw new Error("Error saving paper");
+      return undefined;
     }
   };
 
