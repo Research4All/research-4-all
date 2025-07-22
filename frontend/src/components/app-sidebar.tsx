@@ -5,6 +5,7 @@ import {
   Search,
   FileText,
   Settings,
+  Users,
 } from "lucide-react";
 
 import {
@@ -45,6 +46,11 @@ const items = [
     title: "Papers",
     url: "papers",
     icon: FileText,
+  },
+  {
+    title: "Mentors",
+    url: "mentors",
+    icon: Users,
   },
   {
     title: "Search",

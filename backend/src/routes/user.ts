@@ -101,4 +101,28 @@ router.get("/students", async (req: any, res: any) => {
   }
 });
 
+router.get("/mentor/:mentorId", async (req: any, res: any) => {
+  try {
+    const user = await User.findById(req.session.user._id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    const mentor = await User.findById(req.params.mentorId);
+    if (!mentor) {
+      return res.status(404).json({ error: "Mentor not found" });
+    }
+    
+    if (mentor.role !== "Mentor") {
+      return res.status(400).json({ error: "User is not a mentor" });
+    }
+    
+    const { _id, username, email, role, interests } = mentor;
+    return res.json({ _id, username, email, role, interests });
+  } catch (error) {
+    console.error("Error fetching mentor:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+});
+
 export default router;
