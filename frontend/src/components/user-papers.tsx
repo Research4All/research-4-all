@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { PaperGrid } from "./paper-grid";
 import { Input } from "./ui/input";
+import { Paper } from "../types";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -13,23 +14,6 @@ import { Button } from "./ui/button";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 export function UserPapers() {
-  interface Paper {
-    paperId: string;
-    _id?: string;
-    title: string;
-    abstract?: string;
-    url?: string;
-    openAccessPdf?: {
-      url: string;
-      license: string;
-      status: string;
-    };
-    fieldsOfStudy?: string[];
-    publicationDate: Date;
-    publicationTypes?: string[];
-    authors?: (string | { name: string })[];
-  }
-
   const [papers, setPapers] = useState([]);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("Newest");
@@ -94,7 +78,7 @@ export function UserPapers() {
         throw new Error(data.error || "Failed to save paper");
       }
       return undefined;
-    } catch (error) {
+    } catch {
       throw new Error("Error saving paper");
       return undefined;
     }

@@ -1,26 +1,10 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { PDFRenderer } from "./PDFRenderer";
+import type { Paper } from "../types";
 
 const FASTAPI_URL = import.meta.env.VITE_FASTAPI_URL || "http://localhost:8000";
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
-
-interface Paper {
-  paperId: string;
-  _id?: string;
-  title: string;
-  abstract?: string;
-  url?: string;
-  openAccessPdf?: {
-    url: string;
-    license: string;
-    status: string;
-  };
-  fieldsOfStudy?: string[];
-  publicationDate: Date;
-  publicationTypes?: string[];
-  authors?: string[];
-}
 
 export default function PDFViewerPage() {
   const { paperId } = useParams();
