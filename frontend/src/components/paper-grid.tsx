@@ -1,24 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
+import type { Paper } from "../types";
 
 const FASTAPI_URL = import.meta.env.VITE_FASTAPI_URL || "http://localhost:8000";
-
-interface Paper {
-  paperId: string;
-  _id?: string;
-  title: string;
-  abstract?: string;
-  url?: string;
-  openAccessPdf?: {
-    url: string;
-    license: string;
-    status: string;
-  };
-  fieldsOfStudy?: string[];
-  publicationDate: Date;
-  publicationTypes?: string[];
-  authors?: (string | { name: string })[]; // Accepts string or object with name
-}
 
 interface PaperGridProps {
   papers: Paper[];

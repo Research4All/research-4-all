@@ -2,44 +2,10 @@ import { useEffect, useState, useImperativeHandle, forwardRef } from "react";
 import { Highlighter, MessageSquareText, X, RotateCcw } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 
+import type { Annotation } from "../types";
+import type { Highlight } from "../types";
+
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
-
-interface Annotation {
-  id?: string;
-  text: string;
-  comment: string;
-  position: { x: number; y: number };
-  timestamp: Date;
-  range?: {
-    startOffset: number;
-    endOffset: number;
-    nodeData: string;
-    nodeHTML: string;
-    nodeTagName: string;
-  };
-  _id?: string;
-  userId?: {
-    _id: string;
-    username: string;
-    email: string;
-  };
-}
-
-interface Highlight {
-  id?: string;
-  text: string;
-  position: { x: number; y: number };
-  timestamp: Date;
-  range?: {
-    startOffset: number;
-    endOffset: number;
-    nodeData: string;
-    nodeHTML: string;
-    nodeTagName: string;
-  };
-  color?: string; // Optional color for different highlight types
-  _id?: string;
-}
 
 function serializeRange(range: Range) {
   const saveNode = range.startContainer;

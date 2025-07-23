@@ -1,30 +1,14 @@
 import { useState, useEffect } from "react";
 import { PaperGrid } from "./paper-grid";
 
+import type { Paper } from "../types";
+
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 export function HomeFeed() {
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  interface Paper {
-    paperId: string;
-    _id?: string;
-    title: string;
-    abstract?: string;
-    url?: string;
-    openAccessPdf?: {
-      url: string;
-      license: string;
-      status: string;
-    };
-    fieldsOfStudy?: string[];
-    publicationDate: Date;
-    publicationTypes?: string[];
-    authors?: (string | { name: string })[];
-    score?: number; // Optional field for score
-  }
 
   useEffect(() => {
     const fetchPapers = async () => {
