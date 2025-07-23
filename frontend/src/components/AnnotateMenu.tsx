@@ -371,7 +371,6 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
     });
 
     if (socket) {
-      console.log("Emitting highlight update to socket");
       socket.emit("highlight-update", { paperId: PAPER_MONGO_ID, highlight });
     }
 
@@ -382,7 +381,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
 
     try {
       range.surroundContents(markElement);
-    } catch (error) {
+    } catch {
       const contents = range.extractContents();
       markElement.appendChild(contents);
       range.insertNode(markElement);
