@@ -22,7 +22,11 @@ export function UserPapers() {
           credentials: "include",
         });
         const data = await response.json();
-        setPapers(data.savedPapers || []);
+        const papersWithSavedStatus = (data.savedPapers || []).map((paper: Paper) => ({
+          ...paper,
+          saved: true
+        }));
+        setPapers(papersWithSavedStatus);
       } catch (error) {
         console.error("Error fetching papers:", error);
       }
@@ -39,40 +43,40 @@ export function UserPapers() {
           : []
         : []
     };
+
+    const isCurrentlySaved = paper.saved;    
     try {
-      const response = await fetch(`${BACKEND_URL}/api/papers/save`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(paperToSave),
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (response.ok) {
-        if (data.paper) {
-          return data.paper;
+      if (isCurrentlySaved) {
+        const response = await fetch(`${BACKEND_URL}/api/papers/delete/${paper.paperId}`, {
+          method: "POST",
+          credentials: "include",
+        });
+        if (response.ok) {
+          const updatedPaper = { ...paper, saved: false };
+          setPapers(papers.filter(p => p.paperId !== paper.paperId));
+          return updatedPaper;
+        } else {
+          throw new Error("Failed to unsave paper");
         }
-        const savedResponse = await fetch(`${BACKEND_URL}/api/papers/saved`, {
-          method: "GET",
+      } else {
+        const response = await fetch(`${BACKEND_URL}/api/papers/save`, {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify(paperToSave),
           credentials: "include",
         });
-        const savedData = await savedResponse.json();
-        if (savedResponse.ok) {
-          const foundPaper = (savedData.savedPapers || []).find((p: Paper) => p.paperId === paper.paperId);
-          if (foundPaper) {
-            return foundPaper;
-          }
+        const data = await response.json();
+        if (response.ok) {
+          const updatedPaper = { ...paper, ...data.paper, saved: true };
+          setPapers(papers.map(p => p.paperId === paper.paperId ? updatedPaper : p));
+          return updatedPaper;
+        } else {
+          throw new Error(data.error || "Failed to save paper");
         }
-      } else {
-        throw new Error(data.error || "Failed to save paper");
       }
-      return undefined;
     } catch {
-      throw new Error("Error saving paper");
       return undefined;
     }
   };

@@ -13,6 +13,29 @@ export function HomeFeed() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("Relevance");
 
+  const checkSavedPapers = async (papersToCheck: Paper[]): Promise<Paper[]> => {
+    try {
+      const savedResponse = await fetch(`${BACKEND_URL}/api/papers/saved`, {
+        method: "GET",
+        credentials: "include",
+      });
+      if (savedResponse.ok) {
+        const savedData = await savedResponse.json();
+        const savedPaperIds = (savedData.savedPapers || []).map((p: Paper) => p.paperId);
+        return papersToCheck.map((paper: Paper) => ({
+          ...paper,
+          saved: savedPaperIds.includes(paper.paperId)
+        }));
+      }
+    } catch {
+      throw new Error("Error checking saved papers");
+    }
+    return papersToCheck.map((paper: Paper) => ({
+      ...paper,
+      saved: false
+    }));
+  };
+
   useEffect(() => {
     const fetchPapers = async () => {
       try {
@@ -24,19 +47,20 @@ export function HomeFeed() {
         });
         if (response.ok) {
           const data = await response.json();
-          setPapers(data.data);
+          const papersWithSavedStatus = await checkSavedPapers(data.data);
+          setPapers(papersWithSavedStatus);
         } else if (response.status === 401) {
           const fallbackResponse = await fetch(`${BACKEND_URL}/api/papers`, {
             method: "GET",
             credentials: "include",
           });
           const fallbackData = await fallbackResponse.json();
-          setPapers(fallbackData.data);
+          const papersWithSavedStatus = await checkSavedPapers(fallbackData.data);
+          setPapers(papersWithSavedStatus);
         } else {
           throw new Error(`HTTP error, status: ${response.status}`);
         }
-      } catch (error) {
-        console.error("Error fetching papers:", error);
+      } catch {
         setError("Failed to fetch papers. Please try again later.");
 
         try {
@@ -45,7 +69,8 @@ export function HomeFeed() {
             credentials: "include",
           });
           const fallbackData = await fallbackResponse.json();
-          setPapers(fallbackData.data);
+          const papersWithSavedStatus = await checkSavedPapers(fallbackData.data);
+          setPapers(papersWithSavedStatus);
         } catch (fallbackError) {
           console.error("Error fetching fallback papers:", fallbackError);
           setError("Failed to fetch fallback papers. Please try again later.");
@@ -66,40 +91,42 @@ export function HomeFeed() {
           : []
         : []
     };
+
+    const isCurrentlySaved = paper.saved;
+    
     try {
-      const response = await fetch(`${BACKEND_URL}/api/papers/save`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(paperToSave),
-        credentials: "include",
-      });
-      const data = await response.json();
-      if (response.ok) {
-        if (data.paper) {
-          return data.paper;
+      if (isCurrentlySaved) {
+        const response = await fetch(`${BACKEND_URL}/api/papers/delete/${paper.paperId}`, {
+          method: "POST",
+          credentials: "include",
+        });
+        if (response.ok) {
+          const updatedPaper = { ...paper, saved: false };
+          setPapers(papers.map(p => p.paperId === paper.paperId ? updatedPaper : p));
+          return updatedPaper;
+        } else {
+          throw new Error("Failed to unsave paper");
         }
-        const savedResponse = await fetch(`${BACKEND_URL}/api/papers/saved`, {
-          method: "GET",
+      } else {
+        const response = await fetch(`${BACKEND_URL}/api/papers/save`, {
+          method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
+          body: JSON.stringify(paperToSave),
           credentials: "include",
         });
-        const savedData = await savedResponse.json();
-        if (savedResponse.ok) {
-          const foundPaper = (savedData.savedPapers || []).find((p: Paper) => p.paperId === paper.paperId);
-          if (foundPaper) {
-            return foundPaper;
-          }
+        const data = await response.json();
+        if (response.ok) {
+          const updatedPaper = { ...paper, ...data.paper, saved: true };
+          setPapers(papers.map(p => p.paperId === paper.paperId ? updatedPaper : p));
+          return updatedPaper;
+        } else {
+          console.error('Failed to save paper:', response.status, response.statusText, data.error);
+          throw new Error(data.error || "Failed to save paper");
         }
-      } else {
-        throw new Error(data.error || "Failed to save paper");
       }
-      return undefined;
-    } catch (error) {
-      console.error("Error saving paper:", error);
+    } catch {
       return undefined;
     }
   };
