@@ -1,22 +1,215 @@
-import { useEffect, useState } from "react";
-import { Highlighter, MessageSquareText, X } from "lucide-react";
+import { useEffect, useState, useImperativeHandle, forwardRef } from "react";
+import { Highlighter, MessageSquareText, X, RotateCcw } from "lucide-react";
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 interface Annotation {
-  id: string;
+  id?: string;
   text: string;
   comment: string;
   position: { x: number; y: number };
   timestamp: Date;
+  range?: {
+    startOffset: number;
+    endOffset: number;
+    nodeData: string;
+    nodeHTML: string;
+    nodeTagName: string;
+  };
+  _id?: string;
 }
 
-const AnnotateMenu = () => {
+interface Highlight {
+  id?: string;
+  text: string;
+  position: { x: number; y: number };
+  timestamp: Date;
+  range?: {
+    startOffset: number;
+    endOffset: number;
+    nodeData: string;
+    nodeHTML: string;
+    nodeTagName: string;
+  }
+  color?: string; // Optional color for different highlight types
+  _id?: string;
+}
+
+function serializeRange(range: Range) {
+  const saveNode = range.startContainer;
+  const startOffset = range.startOffset;
+  const endOffset = range.endOffset;
+  const nodeData = (saveNode.nodeType === Node.TEXT_NODE) ? (saveNode as Text).data : ''
+  const parentElement = saveNode.parentElement;
+  const nodeHTML = parentElement ? parentElement.innerHTML : '';
+  const nodeTagName = parentElement ? parentElement.tagName : '';
+  return {
+    startOffset,
+    endOffset,
+    nodeData,
+    nodeHTML,
+    nodeTagName,
+  };
+}
+
+function deserializeRange(rangeData: {
+  startOffset: number;
+  endOffset: number;
+  nodeData: string;
+  nodeHTML: string;
+  nodeTagName: string;
+}): Range | null {
+  const tagList = Array.from(document.getElementsByTagName(rangeData.nodeTagName));
+
+  let foundElement: Element | null = null;
+  for (const element of tagList) {
+    if (element.innerHTML === rangeData.nodeHTML) {
+      foundElement = element;
+      break;
+    }
+  }
+  if (!foundElement) {
+    return null;
+  }
+  
+  let foundNode: ChildNode | null = null;
+  for (const node of foundElement.childNodes) {
+    if (node.nodeType === Node.TEXT_NODE && (node as Text).data === rangeData.nodeData) {
+      foundNode = node;
+      break;
+    }
+  }
+  if (!foundNode) {
+    return null;
+  }
+
+  const range = document.createRange();
+  range.setStart(foundNode, rangeData.startOffset);
+  range.setEnd(foundNode, rangeData.endOffset);
+  return range;
+}
+
+const PAPER_MONGO_ID = '68793152df3083c95ebf1a46' // placeholder ID for testing
+
+export interface AnnotateMenuRef {
+  handleTextLayerReady: () => void;
+}
+
+const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
   const [selection, setSelection] = useState<string>();
   const [position, setPosition] = useState<Record<string, number>>();
   const [range, setRange] = useState<Range>();
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [commentText, setCommentText] = useState("");
-  const [annotations, setAnnotations] = useState<Annotation[]>([]);
   const [activeAnnotation, setActiveAnnotation] = useState<Annotation | null>(null);
+  const [loadedAnnotations, setLoadedAnnotations] = useState<Annotation[]>([]);
+  const [loadedHighlights, setLoadedHighlights] = useState<Highlight[]>([]);
+  const [textLayerReady, setTextLayerReady] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  useEffect(() => {
+    async function fetchAnnotations() {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`, { credentials: 'include' });
+        const data = await response.json();
+        const annotations: Annotation[] = (data.annotations || []).map((a: Annotation) => ({
+          ...a,
+          timestamp: new Date(a.timestamp),
+        }))
+        setLoadedAnnotations(annotations);
+      } catch {
+        console.error("Failed to fetch annotations");
+      }
+    }
+    async function fetchHighlights() {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/highlights/paper/${PAPER_MONGO_ID}`, { credentials: 'include' });
+        const data = await response.json();
+        const highlights: Highlight[] = (data.highlights || []).map((h: Highlight) => ({
+          ...h,
+          timestamp: new Date(h.timestamp),
+        }))
+        setLoadedHighlights(highlights);
+      } catch {
+        console.error("Failed to fetch highlights");
+      }
+    }
+    fetchAnnotations();
+    fetchHighlights();
+  }, []);
+
+  useEffect(() => {
+    if (textLayerReady && loadedAnnotations.length > 0) {
+      renderAnnotations(loadedAnnotations);
+    }
+    if (textLayerReady && loadedHighlights.length > 0) {
+      renderHighlights(loadedHighlights);
+    }
+  }, [textLayerReady, loadedAnnotations, loadedHighlights]);
+
+  const renderAnnotations = (annotations: Annotation[]) => {
+    annotations.forEach((annotation: Annotation) => {
+      if (!annotation.range) return;
+      const range = deserializeRange(annotation.range);
+      if (range) {
+        const spanElement = document.createElement("span");
+        spanElement.className = "annotated-text relative bg-amber-100 border-b-2 border-amber-500 cursor-pointer z-50";
+        spanElement.setAttribute("data-annotation-id", annotation._id || annotation.id || 'temp-id');
+
+        spanElement.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const rect = spanElement.getBoundingClientRect();
+          const pdfContainer = document.querySelector('.bg-white.shadow-lg');
+          const pdfContainerRect = pdfContainer?.getBoundingClientRect();
+          const updatedAnnotation = {
+            ...annotation,
+            position: {
+              x: pdfContainerRect ? pdfContainerRect.right + 20 : rect.right + 20,
+              y: rect.top + window.scrollY - 30
+            }
+          };
+          setActiveAnnotation(updatedAnnotation);
+        });
+
+        try {
+          range.surroundContents(spanElement);
+        } catch {
+          const contents = range.extractContents();
+          spanElement.appendChild(contents);
+          range.insertNode(spanElement);
+        }
+      }
+    });
+  };
+
+  const renderHighlights = (highlights: Highlight[]) => {
+    highlights.forEach((highlight: Highlight) => {
+      if (!highlight.range) return;
+      const range = deserializeRange(highlight.range);
+      if (range) {
+        const markElement = document.createElement("mark");
+        markElement.className = "highlighted-text";
+        markElement.setAttribute("data-highlight-id", highlight._id || highlight.id || 'temp-id');
+        try {
+          range.surroundContents(markElement);
+        } catch {
+          const contents = range.extractContents();
+          markElement.appendChild(contents);
+          range.insertNode(markElement);
+        }
+      }
+    });
+  };
+
+  const handleTextLayerReady = () => {
+    setTextLayerReady(true);
+  };
+
+  useImperativeHandle(ref, () => ({
+    handleTextLayerReady,
+  }));
+
 
   function onSelectStart() {
     if (!showCommentBox) {
@@ -76,7 +269,23 @@ const AnnotateMenu = () => {
   }, []);
 
   function onHighlight() {
-    if (!range) return;
+    if (!range || !selection || !position) return;
+
+    const serializedRange = serializeRange(range);
+    
+    fetch(`${BACKEND_URL}/api/highlights`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        text: selection,
+        range: serializedRange,
+        color: 'yellow',
+        paperMongoId: PAPER_MONGO_ID,
+      }),
+    });
 
     document.getSelection()?.removeAllRanges();
 
@@ -103,22 +312,35 @@ const AnnotateMenu = () => {
 
   function onSaveComment() {
     if (!selection || !position || !commentText.trim() || !range) return;
+    const serializedRange = serializeRange(range);
 
     const newAnnotation: Annotation = {
-      id: Date.now().toString(),
       text: selection,
       comment: commentText,
       position: { x: position.x, y: position.y },
       timestamp: new Date(),
     };
 
-    setAnnotations(prev => [...prev, newAnnotation]);
+    fetch(`${BACKEND_URL}/api/annotations`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        text: selection,
+        comment: commentText,
+        range: serializedRange,
+        position: { x: position.x, y: position.y },
+        paperMongoId: PAPER_MONGO_ID,
+      }),
+    })
     
     document.getSelection()?.removeAllRanges();
     
     const spanElement = document.createElement("span");
     spanElement.className = "annotated-text relative bg-amber-100 border-b-2 border-amber-500 cursor-pointer";
-    spanElement.setAttribute("data-annotation-id", newAnnotation.id);
+    spanElement.setAttribute("data-annotation-id", newAnnotation.id || 'temp-id');
 
     spanElement.addEventListener('click', (e) => {
       e.preventDefault();
@@ -140,7 +362,7 @@ const AnnotateMenu = () => {
 
     try {
       range.surroundContents(spanElement);
-    } catch (error) {
+    } catch {
       const contents = range.extractContents();
       spanElement.appendChild(contents);
       range.insertNode(spanElement);
@@ -158,10 +380,93 @@ const AnnotateMenu = () => {
     setCommentText("");
   }
 
-  
+  const handleReset = async () => {
+    if (!confirm("Are you sure you want to reset all annotations and highlights? This action cannot be undone.")) {
+      return;
+    }
+
+    setIsResetting(true);
+
+    try {
+      const annotationsResponse = await fetch(`${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`, {
+        method: "GET",
+        credentials: 'include',
+      });
+      const annotationsData = await annotationsResponse.json();
+      const annotations = annotationsData.annotations || [];
+
+      for (const annotation of annotations) {
+        await fetch(`${BACKEND_URL}/api/annotations/${annotation._id}`, {
+          method: "DELETE",
+          credentials: 'include',
+        });
+      }
+
+      const highlightsResponse = await fetch(`${BACKEND_URL}/api/highlights/paper/${PAPER_MONGO_ID}`, {
+        method: "GET",
+        credentials: 'include',
+      });
+      const highlightsData = await highlightsResponse.json();
+      const highlights = highlightsData.highlights || [];
+
+      for (const highlight of highlights) {
+        await fetch(`${BACKEND_URL}/api/highlights/${highlight._id}`, {
+          method: "DELETE",
+          credentials: 'include',
+        });
+      }
+
+      setLoadedAnnotations([]);
+      setLoadedHighlights([]);
+      setActiveAnnotation(null);
+
+      document.querySelectorAll('.highlighted-text').forEach(element => {
+        const parent = element.parentNode;
+        if (parent) {
+          parent.replaceChild(document.createTextNode(element.textContent || ''), element);
+          parent.normalize(); 
+        }
+      });
+
+      document.querySelectorAll('.annotated-text').forEach(element => {
+        const parent = element.parentNode;
+        if (parent) {
+          parent.replaceChild(document.createTextNode(element.textContent || ''), element);
+          parent.normalize(); 
+        }
+      });
+
+      alert("All highlights and annotations have been reset.");
+    } catch (error) {
+      console.error("Error resetting annotations and highlights:", error);
+      alert("Failed to reset annotations and highlights. Please try again later.");
+    } finally {
+      setIsResetting(false);
+    }
+  }
 
   return (
     <div role="dialog" aria-labelledby="share" aria-haspopup="dialog">
+      <div className="fixed top-4 right-0 p-4 z-50">
+        <button
+          onClick={handleReset}
+          disabled={isResetting}
+          className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+          title="Delete all highlights and annotations"
+        >
+          {isResetting ? (
+            <>
+              <RotateCcw className="w-4 h-4 animate-spin" />
+              Resetting...
+            </>
+          ) : (
+            <>
+              Reset
+              <RotateCcw className="w-4 h-4" />
+            </>
+          )}
+        </button>
+      </div>
       {selection && position && !showCommentBox && (
         <div
           className="
@@ -181,7 +486,7 @@ const AnnotateMenu = () => {
           </button>
           <div className="w-px bg-gray-600"></div>
           <button 
-            className="flex flex-1 h-full justify-center items-center px-1 hover:bg-gray-700 rounded-r"
+            className="flex flex-1 h-full justify-center items-center px-1 hover:bg-gray-700 rounded-r z-5000"
             onClick={onComment}
             title="Add Comment"
           >
@@ -262,6 +567,6 @@ const AnnotateMenu = () => {
       )}
     </div>
   );
-};
+});
 
 export { AnnotateMenu };

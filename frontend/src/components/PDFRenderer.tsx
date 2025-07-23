@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Document, Page } from "react-pdf";
 import { pdfjs } from "react-pdf";
 import { AnnotateMenu } from "./AnnotateMenu";
+import type { AnnotateMenuRef } from "./AnnotateMenu";
 
 
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker?url";
@@ -14,10 +15,14 @@ interface PDFRendererProps {
 const PDFRenderer = ({ pdfUrl }: PDFRendererProps) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const annotateMenuRef = useRef<AnnotateMenuRef>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
+    setTimeout(() => {
+      annotateMenuRef.current?.handleTextLayerReady();
+    }, 1000);
   };
 
   // TODO: Use a logger for better error handling
@@ -48,7 +53,7 @@ const PDFRenderer = ({ pdfUrl }: PDFRendererProps) => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      <AnnotateMenu />
+      <AnnotateMenu ref={annotateMenuRef} />
       <div className="flex-1 flex justify-center overflow-auto py-8">
         <div className="bg-white shadow-lg overflow-auto">
           <Document
