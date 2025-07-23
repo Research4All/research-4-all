@@ -10,6 +10,7 @@ import { HomeFeed } from "./components/home-feed";
 import { UserPapers } from "./components/user-papers";
 import { Onboarding } from "./components/onboarding";
 import { PDFRenderer } from "./components/PDFRenderer";
+import PDFViewerPage from "./components/pdf-viewer-page";
 
 const FASTAPI_URL = import.meta.env.VITE_FASTAPI_URL || "http://localhost:8000";
 
@@ -20,6 +21,7 @@ export default function App() {
       <Route path="/login" element={<Login1 heading="Welcome back" />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/pdf" element={<PDFRenderer pdfUrl={`${FASTAPI_URL}/proxy-pdf?url=https://arxiv.org/pdf/2106.14834.pdf`} />} />
+      <Route path="/pdf-viewer/:paperId" element={<PDFViewerPage />} />
       <Route element={<PrivateRoutes />}>
         <Route element={<Layout />}>
           <Route path="/" element={<HomeFeed />} />

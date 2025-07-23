@@ -10,3 +10,4 @@ dist
 # Python cache files
 __pycache__/
 *.py[cod]
+/fastapi/venv/
