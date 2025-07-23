@@ -2,44 +2,10 @@ import { useEffect, useState, useImperativeHandle, forwardRef } from "react";
 import { Highlighter, MessageSquareText, X, RotateCcw } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 
+import type { Annotation } from "../types";
+import type { Highlight } from "../types";
+
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
-
-interface Annotation {
-  id?: string;
-  text: string;
-  comment: string;
-  position: { x: number; y: number };
-  timestamp: Date;
-  range?: {
-    startOffset: number;
-    endOffset: number;
-    nodeData: string;
-    nodeHTML: string;
-    nodeTagName: string;
-  };
-  _id?: string;
-  userId?: {
-    _id: string;
-    username: string;
-    email: string;
-  };
-}
-
-interface Highlight {
-  id?: string;
-  text: string;
-  position: { x: number; y: number };
-  timestamp: Date;
-  range?: {
-    startOffset: number;
-    endOffset: number;
-    nodeData: string;
-    nodeHTML: string;
-    nodeTagName: string;
-  };
-  color?: string; // Optional color for different highlight types
-  _id?: string;
-}
 
 function serializeRange(range: Range) {
   const saveNode = range.startContainer;
@@ -78,7 +44,6 @@ function deserializeRange(rangeData: {
     }
   }
   if (!foundElement) {
-    // throw new Error("Element not found for deserialization");
     return null;
   }
 
@@ -93,7 +58,6 @@ function deserializeRange(rangeData: {
     }
   }
   if (!foundNode) {
-    // throw new Error("Text node not found for deserialization");
     return null;
   }
 
@@ -126,6 +90,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
     username: string;
     email: string;
   } | null>(null);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     async function fetchAnnotations() {
@@ -372,7 +337,6 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
     });
 
     if (socket) {
-      console.log("Emitting highlight update to socket");
       socket.emit("highlight-update", { paperId: PAPER_MONGO_ID, highlight });
     }
 
@@ -383,7 +347,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
 
     try {
       range.surroundContents(markElement);
-    } catch (error) {
+    } catch {
       const contents = range.extractContents();
       markElement.appendChild(contents);
       range.insertNode(markElement);
@@ -488,6 +452,8 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
       return;
     }
 
+    setIsResetting(true);
+
     try {
       const annotationsResponse = await fetch(
         `${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`,
@@ -552,9 +518,9 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
       alert("All highlights and annotations have been reset.");
     } catch (error) {
       console.error("Error resetting annotations and highlights:", error);
-      alert(
-        "Failed to reset annotations and highlights. Please try again later."
-      );
+      alert("Failed to reset annotations and highlights. Please try again later.");
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -563,11 +529,21 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
       <div className="fixed top-4 right-0 p-4 z-50">
         <button
           onClick={handleReset}
-          className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors shadow-lg"
+          disabled={isResetting}
+          className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
           title="Delete all highlights and annotations"
         >
-          Reset
-          <RotateCcw className="w-4 h-4" />
+          {isResetting ? (
+            <>
+              <RotateCcw className="w-4 h-4 animate-spin" />
+              Resetting...
+            </>
+          ) : (
+            <>
+              Reset
+              <RotateCcw className="w-4 h-4" />
+            </>
+          )}
         </button>
       </div>
       {selection && position && !showCommentBox && (

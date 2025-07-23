@@ -1,25 +1,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useParams } from "react-router";
-import type { User } from "@/types";
+import type { Mentor } from "@/types";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
-interface MentorProfile {
-  _id: string;
-  username: string;
-  email: string;
-  role: "Mentor";
-  interests: string[];
-  following: User[];
-  followers: User[];
-  followingCount: number;
-  followersCount: number;
-  isFollowing: boolean;
-}
-
 export function MentorProfile() {
-  const [profile, setProfile] = useState<MentorProfile | null>(null);
+  const [profile, setProfile] = useState<Mentor | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState(false);

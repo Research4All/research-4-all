@@ -5,19 +5,8 @@ import type { User } from "@/types";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
-interface userProfile {
-  username: string;
-  email: string;
-  role: "Student" | "Mentor";
-  interests: string[];
-  following: User[];
-  followers: User[];
-  followingCount: number;
-  followersCount: number;
-}
-
 export function ProfileDisplay() {
-  const [profile, setProfile] = useState<userProfile | null>(null);
+  const [profile, setProfile] = useState<User | null>(null);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
