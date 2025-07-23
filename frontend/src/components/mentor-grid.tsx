@@ -92,11 +92,22 @@ export function MentorGrid() {
     });
   };
 
+  const handleFollowUpdate = (mentorId: string, isFollowing: boolean) => {
+    setMentors(prevMentors => 
+      prevMentors.map(mentor => 
+        mentor._id === mentorId 
+          ? { ...mentor, isFollowing } 
+          : mentor
+      )
+    );
+  };
+
   const renderMentorCard = (mentor: Mentor) => (
     <MentorCard
       key={mentor._id}
       mentor={mentor}
       onMentorClick={handleMentorClick}
+      onFollowUpdate={handleFollowUpdate}
     />
   );
 

@@ -8,7 +8,9 @@ const router = Router();
 
 router.get("/profile", async (req: any, res: any) => {
   try {
-    const user = await User.findById(req.session.user._id);
+    const user = await User.findById(req.session.user._id)
+      .populate('following', 'username email role')
+      .populate('followers', 'username email role');
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -18,6 +20,8 @@ router.get("/profile", async (req: any, res: any) => {
       email,
       role,
       interests,
+      following,
+      followers,
       followingCount: following.length,
       followersCount: followers.length
     });
