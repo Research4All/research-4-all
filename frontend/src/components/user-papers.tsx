@@ -71,7 +71,7 @@ export function UserPapers() {
         throw new Error(data.error || "Failed to save paper");
       }
       return undefined;
-    } catch (error) {
+    } catch {
       throw new Error("Error saving paper");
       return undefined;
     }

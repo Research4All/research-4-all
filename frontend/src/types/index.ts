@@ -38,3 +38,40 @@ export interface GridCols {
   lg?: number;
   xl?: number;
 } 
+
+export interface Annotation {
+  id?: string;
+  text: string;
+  comment: string;
+  position: { x: number; y: number };
+  timestamp: Date;
+  range?: {
+    startOffset: number;
+    endOffset: number;
+    nodeData: string;
+    nodeHTML: string;
+    nodeTagName: string;
+  };
+  _id?: string;
+  userId?: {
+    _id: string;
+    username: string;
+    email: string;
+  };
+}
+
+export interface Highlight {
+  id?: string;
+  text: string;
+  position: { x: number; y: number };
+  timestamp: Date;
+  range?: {
+    startOffset: number;
+    endOffset: number;
+    nodeData: string;
+    nodeHTML: string;
+    nodeTagName: string;
+  };
+  color?: string; // Optional color for different highlight types
+  _id?: string;
+}
