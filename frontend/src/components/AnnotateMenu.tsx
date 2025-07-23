@@ -69,7 +69,6 @@ function deserializeRange(rangeData: {
     }
   }
   if (!foundElement) {
-    // throw new Error("Element not found for deserialization");
     return null;
   }
   
@@ -81,7 +80,6 @@ function deserializeRange(rangeData: {
     }
   }
   if (!foundNode) {
-    // throw new Error("Text node not found for deserialization");
     return null;
   }
 
@@ -107,6 +105,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
   const [loadedAnnotations, setLoadedAnnotations] = useState<Annotation[]>([]);
   const [loadedHighlights, setLoadedHighlights] = useState<Highlight[]>([]);
   const [textLayerReady, setTextLayerReady] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
 
   useEffect(() => {
     async function fetchAnnotations() {
@@ -386,6 +385,8 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
       return;
     }
 
+    setIsResetting(true);
+
     try {
       const annotationsResponse = await fetch(`${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`, {
         method: "GET",
@@ -439,6 +440,8 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
     } catch (error) {
       console.error("Error resetting annotations and highlights:", error);
       alert("Failed to reset annotations and highlights. Please try again later.");
+    } finally {
+      setIsResetting(false);
     }
   }
 
@@ -447,11 +450,21 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, {}>((props, ref) => {
       <div className="fixed top-4 right-0 p-4 z-50">
         <button
           onClick={handleReset}
-          className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors shadow-lg"
+          disabled={isResetting}
+          className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors shadow-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
           title="Delete all highlights and annotations"
         >
-          Reset
-          <RotateCcw className="w-4 h-4" />
+          {isResetting ? (
+            <>
+              <RotateCcw className="w-4 h-4 animate-spin" />
+              Resetting...
+            </>
+          ) : (
+            <>
+              Reset
+              <RotateCcw className="w-4 h-4" />
+            </>
+          )}
         </button>
       </div>
       {selection && position && !showCommentBox && (
