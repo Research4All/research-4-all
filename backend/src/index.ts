@@ -3,6 +3,9 @@ import cors from "cors";
 import express, { Request, Response, Application } from "express";
 import session from "express-session";
 import connectDB from "./db/database";
+import { createServer } from "http";
+import { Server as SocketIOServer } from "socket.io";
+import { Socket } from "socket.io";
 
 dotenv.config();
 const PORT: number = Number(process.env.PORT) || 5000;
@@ -20,6 +23,9 @@ import userRouter from "./routes/user";
 import annotationRouter from "./routes/annotation";
 import highlightRouter from "./routes/highlight";
 import axios from "axios";
+
+import type { IAnnotation } from "./models/Annotation";
+import type { IHighlight } from "./models/Highlight";
 
 const app: Application = express();
 app.use(
@@ -74,6 +80,35 @@ app.get("/data_from_fastapi", async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
+const httpServer = createServer(app);
+
+const io = new SocketIOServer(httpServer, {
+  cors: {
+    origin: FRONTEND_URL,
+    credentials: true,
+  },
+});
+
+io.on("connection", (socket: Socket) => {
+  console.log("A user connected", socket.id);
+
+  socket.on("join-document", (paperId: string) => {
+    socket.join(paperId);
+    console.log(`Socket ${socket.id} joined document ${paperId}`);
+  });
+
+  socket.on("annotation-update", ({ paperId, annotation }: { paperId: string; annotation: IAnnotation }) => {
+    socket.to(paperId).emit("annotation-update", { annotation });
+  });
+  socket.on("highlight-update", ({ paperId, highlight }: { paperId: string; highlight: IHighlight }) => {
+    socket.to(paperId).emit("highlight-update", { highlight });
+  });
+
+  socket.on("disconnect", () => {
+    console.log("A user disconnected", socket.id);
+  });
+});
+
+httpServer.listen(PORT, () => {
   console.log(`Server is running on ${PORT}`);
 });
