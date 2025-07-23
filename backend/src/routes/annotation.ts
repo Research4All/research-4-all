@@ -46,7 +46,7 @@ router.get("/paper/:paperMongoId", async (req: any, res: any) => {
     const { paperMongoId } = req.params;
     const { userId } = req.query;
 
-    let query: any = { paperMongoId };
+    const query: any = { paperMongoId };
 
     if (userId) {
       query.userId = userId;
