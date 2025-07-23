@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import type { Paper } from "../types";
+import { GenericGrid } from './generic-grid';
+import { PaperCard } from './paper-card';
+import type { Paper } from '@/types';
 
 const FASTAPI_URL = import.meta.env.VITE_FASTAPI_URL || "http://localhost:8000";
 
 interface PaperGridProps {
   papers: Paper[];
   handleSavePaper: (paper: Paper) => Promise<Paper | undefined>;
+  itemsPerPage?: number;
+  showLoadMore?: boolean;
 }
 
-export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
+export function PaperGrid({ papers, handleSavePaper, itemsPerPage = 12, showLoadMore = true }: PaperGridProps) {
   const [selectedPaper, setSelectedPaper] = useState<Paper | null>(null);
   const [showModal, setShowModal] = useState(false);
   const navigate = useNavigate();
@@ -24,49 +28,25 @@ export function PaperGrid({ papers, handleSavePaper }: PaperGridProps) {
     setSelectedPaper(null);
   };
 
+  const renderPaperCard = (paper: Paper) => (
+    <PaperCard
+      key={paper.paperId}
+      paper={paper}
+      handleSavePaper={handleSavePaper}
+      onOpenModal={openModal}
+    />
+  );
+
   return (
     <div>
-      {papers.length > 0 ? (
-        <div className="grid grid-cols-4 gap-4 m-4">
-          {papers.map((paper: Paper) => (
-            <div key={paper.paperId} className="bg-white rounded shadow p-4">
-              <h3 className="font-semibold text-lg mb-2">{paper.title}</h3>
-              <p className="text-sm text-gray-600 mb-1">
-                Publication Date:{" "}
-                {paper.publicationDate ? (
-                  <span>
-                    {paper.publicationDate instanceof Date
-                      ? paper.publicationDate.toLocaleDateString()
-                      : paper.publicationDate}
-                  </span>
-                ) : (
-                  <span className="text-gray-400">Unknown</span>
-                )}
-              </p>
-              {paper.openAccessPdf?.url && (
-                <button
-                  onClick={() => openModal(paper)}
-                  className="text-blue-500 hover:underline cursor-pointer bg-none border-none p-0"
-                >
-                  View PDF
-                </button>
-              )}
-              <div className="mt-2">
-                <button
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer w-full"
-                  onClick={() => {
-                    handleSavePaper(paper);
-                  }}
-                >
-                  Save paper
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <p>No papers found.</p>
-      )}
+      <GenericGrid
+        items={papers}
+        renderItem={renderPaperCard}
+        emptyMessage="No papers found."
+        gridCols={{ sm: 1, md: 2, lg: 3, xl: 4 }}
+        itemsPerPage={itemsPerPage}
+        showLoadMore={showLoadMore}
+      />
 
       {showModal && selectedPaper?.openAccessPdf?.url && (
         <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50 p-4">

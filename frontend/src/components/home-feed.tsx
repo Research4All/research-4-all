@@ -1,14 +1,17 @@
 import { useState, useEffect } from "react";
 import { PaperGrid } from "./paper-grid";
-
-import type { Paper } from "../types";
+import { PaperSearchSort } from "./paper-search-sort";
+import { filterAndSortPapers } from "@/utils/paper-utils";
+import type { Paper } from "@/types";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 export function HomeFeed() {
-  const [papers, setPapers] = useState([]);
+  const [papers, setPapers] = useState<Paper[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("Relevance");
 
   useEffect(() => {
     const fetchPapers = async () => {
@@ -101,6 +104,8 @@ export function HomeFeed() {
     }
   };
 
+  const filteredAndSortedPapers = filterAndSortPapers(papers, search, sortBy);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -120,12 +125,21 @@ export function HomeFeed() {
   return (
     <>
       <div className="font-bold m-4">Recommended Papers</div>
-      {papers.length > 0 && (papers[0] as Paper).score !== undefined && (
+      {papers.length > 0 && papers[0].score !== undefined && (
         <div className="text-sm text-gray-500 m-4">
           Papers are sorted by relevance score based on your interests.
         </div>
       )}
-      <PaperGrid papers={papers} handleSavePaper={handleSavePaper} />
+      
+      <PaperSearchSort
+        search={search}
+        setSearch={setSearch}
+        sortBy={sortBy}
+        setSortBy={setSortBy}
+        showScoreSort={true}
+      />
+      
+      <PaperGrid papers={filteredAndSortedPapers} handleSavePaper={handleSavePaper} itemsPerPage={12} showLoadMore={true} />
     </>
   );
 }
