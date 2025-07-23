@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Optional
 from fastapi.responses import StreamingResponse
 import httpx
 import os
+from datetime import datetime
 
 app = FastAPI()
 
@@ -27,13 +28,23 @@ class Paper(BaseModel):
     abstract: Optional[str] = Field(None, description="Abstract of the paper")
     url: Optional[str] = Field(None, description="URL to the paper")
     openAccessPdf: Optional[Dict[str, Any]] = Field(None, description="Open access PDF information")
+    year: Optional[int] = Field(None, description="Publication year of the paper")
     
 class User(BaseModel):
     interests: List[str] = Field(..., description="List of interests as strings")
+    savedPapers: List[str] = Field(default=[], description="List of saved paper IDs")
 
 class PaperRecommendationRequest(BaseModel):
     user_interests: List[str] = Field(..., description="List of user interests as strings")
     papers: List[Paper] = Field(..., description="List of papers with their fields of study")
+    saved_papers: List[Paper] = Field(default=[], description="User's saved papers for content-based filtering")
+    
+class HybridRecommendationRequest(BaseModel):
+    user_interests: List[str] = Field(..., description="List of user interests as strings")
+    papers: List[Paper] = Field(..., description="List of papers with their fields of study")
+    saved_papers: List[Paper] = Field(default=[], description="User's saved papers for content-based filtering")
+    followers_saved_papers: List[Paper] = Field(default=[], description="Papers saved by user's followers")
+    similar_users_saved_papers: List[Paper] = Field(default=[], description="Papers saved by similar users")
     
 class UserRecommendationRequest(BaseModel):
     user_interests: List[str] = Field(..., description="List of user interests as strings")
@@ -42,57 +53,189 @@ class UserRecommendationRequest(BaseModel):
 class RecommendationResponse(BaseModel):
     similarities: List[float] = Field(..., description="List of similarity scores for each paper")
     total_items: int = Field(..., description="Total number of items considered for recommendation")
+    content_scores: Optional[List[float]] = Field(None, description="Content-based filtering scores")
+    collaborative_scores: Optional[List[float]] = Field(None, description="Collaborative filtering scores")
 
 @app.get("/")
 async def root():
     return {"message": "Hello World"}
 
-@app.post("/recommend-papers", response_model=RecommendationResponse)
-async def recommend_papers(request: PaperRecommendationRequest):
-    vectorizer = TfidfVectorizer()
+def calculate_recency_score(publication_year: Optional[int], max_boost: float = 0.15) -> float:
+    """Calculate recency boost score based on publication year."""
+    if not publication_year:
+        return 0.0
+    
+    current_year = datetime.now().year
+    years_old = current_year - publication_year
+    
+    if years_old <= 0:
+        return max_boost
+    elif years_old <= 1:
+        return max_boost * 0.8
+    elif years_old <= 2:
+        return max_boost * 0.6
+    elif years_old <= 3:
+        return max_boost * 0.4
+    elif years_old <= 5:
+        return max_boost * 0.2
+    else:
+        return 0.0
 
-    user_profile = " ".join(request.user_interests)
-
-    paper_fields = []
-    OPEN_ACCESS_BOOST = 0.3 # Prefer open access papers
-
-    if not request.papers:
-        return RecommendationResponse(
-            similarities=[],
-            total_items=0
-        )
-        
-    for paper in request.papers:
+def calculate_content_based_scores(user_interests: List[str], papers: List[Paper], saved_papers: List[Paper] = None) -> List[float]:
+    """Calculate content-based filtering scores using user interests and saved papers."""
+    vectorizer = TfidfVectorizer(max_features=1000, stop_words='english')
+    
+    user_profile_parts = []
+    
+    if user_interests:
+        user_profile_parts.append(" ".join(user_interests))
+    
+    if saved_papers:
+        for paper in saved_papers:
+            paper_content = []
+            if paper.fieldsOfStudy:
+                paper_content.extend(paper.fieldsOfStudy)
+            if paper.abstract:
+                paper_content.append(paper.abstract)
+            if paper.title:
+                paper_content.append(paper.title)
+            if paper_content:
+                user_profile_parts.append(" ".join(paper_content))
+    
+    if not user_profile_parts:
+        return [0.0] * len(papers)
+    
+    user_profile = " ".join(user_profile_parts)
+    
+    paper_contents = []
+    for paper in papers:
+        paper_content = []
         if paper.fieldsOfStudy:
-            field_text = ' '.join(paper.fieldsOfStudy)
-        else:
-            field_text = paper.title
-        paper_fields.append(field_text)
-            
-    all_text = [user_profile] + paper_fields
+            paper_content.extend(paper.fieldsOfStudy)
+        if paper.abstract:
+            paper_content.append(paper.abstract)
+        if paper.title:
+            paper_content.append(paper.title)
+        paper_contents.append(" ".join(paper_content))
+    
+    all_text = [user_profile] + paper_contents
     tfidf_matrix = vectorizer.fit_transform(all_text)
     
     user_vector = tfidf_matrix[0:1]
     paper_vectors = tfidf_matrix[1:]
 
-    # TODO: cache similarity results 
-    similarities = cosine_similarity(user_vector, paper_vectors)
+    similarities = cosine_similarity(user_vector, paper_vectors)[0]
     
+    OPEN_ACCESS_BOOST = 0.2
     boosted_similarities = []
-    for i, paper in enumerate(request.papers):
-        base_similarity = similarities[0][i]
+    for i, paper in enumerate(papers):
+        base_similarity = similarities[i]
         
         if paper.openAccessPdf and paper.openAccessPdf.get("url"):
-            boosted_similarity = base_similarity + OPEN_ACCESS_BOOST
-            boosted_similarity = min(boosted_similarity, 1.0)
-        else:
-            boosted_similarity = base_similarity
-            
-        boosted_similarities.append(boosted_similarity)
+            base_similarity = min(base_similarity + OPEN_ACCESS_BOOST, 1.0)
+        
+        recency_boost = calculate_recency_score(paper.year)
+        base_similarity = min(base_similarity + recency_boost, 1.0)
+        
+        boosted_similarities.append(base_similarity)
+    
+    return boosted_similarities
+
+def calculate_collaborative_scores(papers: List[Paper], followers_papers: List[Paper], similar_users_papers: List[Paper]) -> List[float]:
+    """Calculate collaborative filtering scores based on followers and similar users."""
+    if not papers:
+        return []
+    
+    paper_scores = {}
+    
+    for paper in papers:
+        paper_id = paper.paperId
+        score = 0.0
+        
+        # Check followers' papers
+        for follower_paper in followers_papers:
+            if follower_paper.paperId == paper_id:
+                score += 1.0
+        
+        # Check similar users' papers (weighted slightly less)
+        for similar_user_paper in similar_users_papers:
+            if similar_user_paper.paperId == paper_id:
+                score += 0.7
+        
+        paper_scores[paper_id] = score
+    
+    max_score = max(paper_scores.values()) if paper_scores.values() else 1.0
+    if max_score > 0:
+        normalized_scores = [paper_scores.get(paper.paperId, 0.0) / max_score for paper in papers]
+    else:
+        normalized_scores = [0.0] * len(papers)
+    
+    return normalized_scores
+
+@app.post("/recommend-papers", response_model=RecommendationResponse)
+async def recommend_papers(request: PaperRecommendationRequest):
+    """Original content-based recommendation using only user interests. Only used as fallback."""
+    content_scores = calculate_content_based_scores(
+        request.user_interests, 
+        request.papers, 
+        request.saved_papers
+    )
     
     return RecommendationResponse(
-        similarities=boosted_similarities,
-        total_items=len(request.papers)
+        similarities=content_scores,
+        total_items=len(request.papers),
+        content_scores=content_scores
+    )
+
+@app.post("/hybrid-recommend-papers", response_model=RecommendationResponse)
+async def hybrid_recommend_papers(request: HybridRecommendationRequest):
+    """Hybrid recommendation combining content-based and collaborative filtering."""
+    
+    content_scores = calculate_content_based_scores(
+        request.user_interests, 
+        request.papers, 
+        request.saved_papers
+    )
+    
+    collaborative_scores = calculate_collaborative_scores(
+        request.papers,
+        request.followers_saved_papers,
+        request.similar_users_saved_papers
+    )
+    
+    content_weight = 0.7
+    collaborative_weight = 0.3
+    
+    has_saved_papers = len(request.saved_papers) > 0
+    has_followers_data = len(request.followers_saved_papers) > 0
+    has_similar_users_data = len(request.similar_users_saved_papers) > 0
+    
+    if has_saved_papers and (has_followers_data or has_similar_users_data):
+        content_weight = 0.6
+        collaborative_weight = 0.4
+    elif has_saved_papers:
+        content_weight = 0.8
+        collaborative_weight = 0.2
+    elif has_followers_data or has_similar_users_data:
+        content_weight = 0.3
+        collaborative_weight = 0.7
+    else:
+        content_weight = 1.0
+        collaborative_weight = 0.0
+    
+    hybrid_scores = []
+    for i in range(len(request.papers)):
+        content_score = content_scores[i] if i < len(content_scores) else 0.0
+        collaborative_score = collaborative_scores[i] if i < len(collaborative_scores) else 0.0
+        
+        hybrid_score = (content_score * content_weight) + (collaborative_score * collaborative_weight)
+        hybrid_scores.append(hybrid_score)
+    
+    return RecommendationResponse(
+        similarities=hybrid_scores,
+        total_items=len(request.papers),
+        content_scores=content_scores,
+        collaborative_scores=collaborative_scores
     )
     
 @app.post("/recommend-users", response_model=RecommendationResponse)
@@ -123,10 +266,9 @@ async def recommend_users(request: UserRecommendationRequest):
         total_items=len(request.users)
     )
 
-# Proxy PDF endpoint
-# Needed to avoid CORS issues when fetching PDFs from semantic scholar API for rendering in the frontend
 @app.get("/proxy-pdf")
 async def proxy_pdf(url: str):
+    """Needed to avoid CORS issues when fetching PDFs from semantic scholar API for rendering in the frontend."""
     async with httpx.AsyncClient(follow_redirects=True) as client:
         response = await client.get(url)
         if response.status_code == 200:

@@ -41,7 +41,7 @@ export function HomeFeed() {
       try {
         setLoading(true);
         setError(null);
-        const response = await fetch(`${BACKEND_URL}/api/papers/personalized`, {
+        const response = await fetch(`${BACKEND_URL}/api/papers/hybrid`, {
           method: "GET",
           credentials: "include",
         });
@@ -134,17 +134,24 @@ export function HomeFeed() {
   const filteredAndSortedPapers = filterAndSortPapers(papers, search, sortBy);
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-lg">Loading recommended papers...</div>
-      </div>
-    );
+    return <div className="flex justify-center items-center h-64">Loading recommendations...</div>;
   }
 
   if (error) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-red-500">{error}</div>
+      <div className="flex flex-col gap-4">
+        <div className="text-red-500 text-center">{error}</div>
+        {papers.length > 0 && (
+          <>
+            <PaperSearchSort
+              search={search}
+              setSearch={setSearch}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+            />
+            <PaperGrid papers={filteredAndSortedPapers} handleSavePaper={handleSavePaper} itemsPerPage={12} showLoadMore={true} />
+          </>
+        )}
       </div>
     );
   }
@@ -163,9 +170,8 @@ export function HomeFeed() {
         setSearch={setSearch}
         sortBy={sortBy}
         setSortBy={setSortBy}
-        showScoreSort={true}
       />
-      
+
       <PaperGrid papers={filteredAndSortedPapers} handleSavePaper={handleSavePaper} itemsPerPage={12} showLoadMore={true} />
     </>
   );
