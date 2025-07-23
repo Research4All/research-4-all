@@ -28,13 +28,9 @@ import {
 import { useNavigate } from "react-router";
 import { useState, useEffect } from "react";
 
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+import type { User } from "../types";
 
-interface User {
-  username: string;
-  email: string;
-  role?: "Student" | "Mentor";
-}
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 export function NavUser() {
   const { isMobile } = useSidebar();

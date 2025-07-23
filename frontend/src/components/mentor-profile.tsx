@@ -2,18 +2,12 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useParams } from "react-router";
 
+import type { Mentor } from "../types";
+
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
-interface MentorProfile {
-  _id: string;
-  username: string;
-  email: string;
-  role: "Mentor";
-  interests: string[];
-}
-
 export function MentorProfile() {
-  const [profile, setProfile] = useState<MentorProfile | null>(null);
+  const [profile, setProfile] = useState<Mentor | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
