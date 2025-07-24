@@ -1,3 +1,6 @@
+import { useState } from 'react';
+import { Bookmark } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import type { Paper } from '@/types';
 
 interface PaperCardProps {
@@ -7,9 +10,44 @@ interface PaperCardProps {
 }
 
 export function PaperCard({ paper, handleSavePaper, onOpenModal }: PaperCardProps) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSaveToggle = async () => {
+    setIsLoading(true);
+    try {
+      await handleSavePaper(paper);
+    } catch {
+      throw new Error("Error toggling save state");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="bg-white rounded shadow p-4">
-      <h3 className="font-semibold text-lg mb-2">{paper.title}</h3>
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="font-semibold text-lg flex-1">{paper.title}</h3>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <button
+              onClick={handleSaveToggle}
+              disabled={isLoading}
+              className={`p-2 rounded-full transition-colors ${
+                paper.saved 
+                  ? 'text-blue-600 hover:text-blue-700' 
+                  : 'text-gray-400 hover:text-blue-600'
+              } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            >
+              <Bookmark 
+                className={`w-5 h-5 ${paper.saved ? 'fill-current' : ''}`} 
+              />
+            </button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>{paper.saved ? 'Unsave paper' : 'Save paper'}</p>
+          </TooltipContent>
+        </Tooltip>
+      </div>
       <p className="text-sm text-gray-600 mb-1">
         Publication Date:{" "}
         {paper.publicationDate ? (
@@ -30,16 +68,6 @@ export function PaperCard({ paper, handleSavePaper, onOpenModal }: PaperCardProp
           View PDF
         </button>
       )}
-      <div className="mt-2">
-        <button
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 cursor-pointer w-full"
-          onClick={() => {
-            handleSavePaper(paper);
-          }}
-        >
-          Save paper
-        </button>
-      </div>
     </div>
   );
 } 

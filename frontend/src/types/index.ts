@@ -15,6 +15,7 @@ export interface Paper {
   publicationTypes?: string[];
   authors?: (string | { name: string })[];
   score?: number; // Optional field for relevance score
+  saved?: boolean;
 }
 
 // User/Mentor related types
