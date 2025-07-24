@@ -67,13 +67,15 @@ function deserializeRange(rangeData: {
   return range;
 }
 
-const PAPER_MONGO_ID = "68793152df3083c95ebf1a46"; // placeholder ID for testing
-
 export interface AnnotateMenuRef {
   handleTextLayerReady: () => void;
 }
 
-const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
+interface AnnotateMenuProps {
+  paperId?: string;
+}
+
+const AnnotateMenu = forwardRef<AnnotateMenuRef, AnnotateMenuProps>(({ paperId }, ref) => {
   const [selection, setSelection] = useState<string>();
   const [position, setPosition] = useState<Record<string, number>>();
   const [range, setRange] = useState<Range>();
@@ -94,9 +96,10 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
 
   useEffect(() => {
     async function fetchAnnotations() {
+      if (!paperId) return;
       try {
         const response = await fetch(
-          `${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`,
+          `${BACKEND_URL}/api/annotations/paper/${paperId}`,
           { credentials: "include" }
         );
         const data = await response.json();
@@ -112,9 +115,10 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
       }
     }
     async function fetchHighlights() {
+      if (!paperId) return;
       try {
         const response = await fetch(
-          `${BACKEND_URL}/api/highlights/paper/${PAPER_MONGO_ID}`,
+          `${BACKEND_URL}/api/highlights/paper/${paperId}`,
           { credentials: "include" }
         );
         const data = await response.json();
@@ -148,7 +152,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
     fetchAnnotations();
     fetchHighlights();
     fetchCurrentUser();
-  }, []);
+  }, [paperId]);
 
   useEffect(() => {
     if (textLayerReady && loadedAnnotations.length > 0) {
@@ -160,9 +164,10 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
   }, [textLayerReady, loadedAnnotations, loadedHighlights]);
 
   useEffect(() => {
+    if (!paperId) return;
     const s = io(BACKEND_URL, { withCredentials: true });
     setSocket(s);
-    s.emit("join-document", PAPER_MONGO_ID);
+    s.emit("join-document", paperId);
 
     s.on("annotation-update", ({ annotation }) => {
       setLoadedAnnotations((prev) => [
@@ -181,7 +186,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
     return () => {
       s.disconnect();
     };
-  }, []);
+  }, [paperId]);
 
   const renderAnnotations = (annotations: Annotation[]) => {
     annotations.forEach((annotation: Annotation) => {
@@ -316,7 +321,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
   }, []);
 
   function onHighlight() {
-    if (!range || !selection || !position) return;
+    if (!range || !selection || !position || !paperId) return;
 
     const serializedRange = serializeRange(range);
 
@@ -324,7 +329,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
       text: selection,
       range: serializedRange,
       color: "yellow",
-      paperMongoId: PAPER_MONGO_ID,
+      paperMongoId: paperId,
     };
 
     fetch(`${BACKEND_URL}/api/highlights`, {
@@ -337,7 +342,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
     });
 
     if (socket) {
-      socket.emit("highlight-update", { paperId: PAPER_MONGO_ID, highlight });
+      socket.emit("highlight-update", { paperId: paperId, highlight });
     }
 
     document.getSelection()?.removeAllRanges();
@@ -364,7 +369,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
   }
 
   function onSaveComment() {
-    if (!selection || !position || !commentText.trim() || !range) return;
+    if (!selection || !position || !commentText.trim() || !range || !paperId) return;
     const serializedRange = serializeRange(range);
 
     const annotation: Annotation = {
@@ -382,19 +387,24 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
         : undefined,
     };
 
+    const annotationData = {
+      ...annotation,
+      paperMongoId: paperId,
+    };
+
     fetch(`${BACKEND_URL}/api/annotations`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       credentials: "include",
-      body: JSON.stringify(annotation),
+      body: JSON.stringify(annotationData),
     });
 
     if (socket) {
       socket.emit("annotation-update", {
-        paperId: PAPER_MONGO_ID,
-        annotation,
+        paperId: paperId,
+        annotation: annotationData,
       });
     }
 
@@ -444,6 +454,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
   }
 
   const handleReset = async () => {
+    if (!paperId) return;
     if (
       !confirm(
         "Are you sure you want to reset all annotations and highlights? This action cannot be undone."
@@ -456,7 +467,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
 
     try {
       const annotationsResponse = await fetch(
-        `${BACKEND_URL}/api/annotations/paper/${PAPER_MONGO_ID}`,
+        `${BACKEND_URL}/api/annotations/paper/${paperId}`,
         {
           method: "GET",
           credentials: "include",
@@ -473,7 +484,7 @@ const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
       }
 
       const highlightsResponse = await fetch(
-        `${BACKEND_URL}/api/highlights/paper/${PAPER_MONGO_ID}`,
+        `${BACKEND_URL}/api/highlights/paper/${paperId}`,
         {
           method: "GET",
           credentials: "include",
