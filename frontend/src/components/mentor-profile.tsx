@@ -71,7 +71,9 @@ export function MentorProfile() {
         setProfile(prev => prev ? {
           ...prev,
           isFollowing: !prev.isFollowing,
-          followersCount: prev.isFollowing ? prev.followersCount - 1 : prev.followersCount + 1
+          followersCount: prev.isFollowing
+            ? (prev.followersCount ?? 0) - 1
+            : (prev.followersCount ?? 0) + 1
         } : null);
       } else {
         const errorData = await response.json();

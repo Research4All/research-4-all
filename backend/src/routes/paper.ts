@@ -2,6 +2,7 @@ import { Request, Response, Router } from "express";
 import axios from "axios";
 import Paper from "../models/Paper";
 import User from "../models/User";
+import { Types } from "mongoose";
 
 const router = Router();
 const BULK_SEARCH_URL =
@@ -58,6 +59,169 @@ const fetchRecommendations = async (req: any, res: any) => {
     });
 };
 
+const getFollowersSavedPapers = async (userId: string) => {
+  try {
+    const user = await User.findById(userId).populate('following');
+    if (!user || !user.following || user.following.length === 0) {
+      return [];
+    }
+
+    const followerIds = user.following.map((follower: any) => follower._id);
+    const followers = await User.find({ _id: { $in: followerIds } })
+      .populate('savedPapers')
+      .exec();
+
+    const followersPapers: any[] = [];
+    followers.forEach((follower: any) => {
+      if (follower.savedPapers && follower.savedPapers.length > 0) {
+        followersPapers.push(...follower.savedPapers);
+      }
+    });
+
+    return followersPapers;
+  } catch (error) {
+    console.error("Error fetching followers' saved papers:", error);
+    return [];
+  }
+};
+
+const getSimilarUsersSavedPapers = async (userId: string, userInterests: string[]) => {
+  try {
+    if (!userInterests || userInterests.length === 0) {
+      return [];
+    }
+
+    const similarUsers = await User.find({
+      _id: { $ne: userId },
+      interests: { $in: userInterests },
+      savedPapers: { $exists: true, $ne: [] }
+    })
+    .populate('savedPapers')
+    .limit(10) // Arbitrary limit to avoid performance issues
+    .exec();
+
+    const similarUsersPapers: any[] = [];
+    similarUsers.forEach((user: any) => {
+      if (user.savedPapers && user.savedPapers.length > 0) {
+        similarUsersPapers.push(...user.savedPapers);
+      }
+    });
+
+    return similarUsersPapers;
+  } catch (error) {
+    console.error("Error fetching similar users' saved papers:", error);
+    return [];
+  }
+};
+
+const getHybridRecommendations = async (req: any, res: any) => {
+  if (!req.session || !req.session.user) {
+    return res.status(401).json({ error: "User not authenticated." });
+  }
+
+  try {
+    const user = await User.findById(req.session.user._id);
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const savedPapers = await Paper.find({
+      _id: { $in: user.savedPapers }
+    });
+
+    const followersPapers = await getFollowersSavedPapers((user._id as Types.ObjectId).toString());
+
+    const similarUsersPapers = await getSimilarUsersSavedPapers((user._id as Types.ObjectId).toString(), user.interests);
+
+    const query = user.interests && user.interests.length > 0 
+      ? user.interests.join(" OR ") 
+      : "computer science"; // fallback query
+    
+    const papersResponse = await axios.get(BULK_SEARCH_URL, {
+      params: {
+        query: query,
+        fields: "title,fieldsOfStudy,abstract,url,openAccessPdf,publicationTypes,publicationDate,year",
+        limit: 50,
+      },
+    });
+
+    const papers = papersResponse.data.data;
+    if (!papers || papers.length === 0) {
+      return fetchBulkPapers(req, res);
+    }
+
+    const hybridRequest = {
+      user_interests: user.interests || [],
+      papers: papers.map((paper: any) => ({
+        paperId: paper.paperId,
+        title: paper.title,
+        fieldsOfStudy: paper.fieldsOfStudy || [],
+        abstract: paper.abstract || "",
+        url: paper.url,
+        openAccessPdf: paper.openAccessPdf,
+        publicationDate: paper.publicationDate || null,
+        year: paper.year || null,
+      })),
+      saved_papers: savedPapers.map((paper: any) => ({
+        paperId: paper.paperId,
+        title: paper.title,
+        fieldsOfStudy: paper.fieldsOfStudy || [],
+        abstract: paper.abstract || "",
+        url: paper.url,
+        openAccessPdf: paper.openAccessPdf,
+        publicationDate: paper.publicationDate || null,
+        year: paper.year || null,
+      })),
+      followers_saved_papers: followersPapers.map((paper: any) => ({
+        paperId: paper.paperId,
+        title: paper.title,
+        fieldsOfStudy: paper.fieldsOfStudy || [],
+        abstract: paper.abstract || "",
+        url: paper.url,
+        openAccessPdf: paper.openAccessPdf,
+        publicationDate: paper.publicationDate || null,
+        year: paper.year || null,
+      })),
+      similar_users_saved_papers: similarUsersPapers.map((paper: any) => ({
+        paperId: paper.paperId,
+        title: paper.title,
+        fieldsOfStudy: paper.fieldsOfStudy || [],
+        abstract: paper.abstract || "",
+        url: paper.url,
+        openAccessPdf: paper.openAccessPdf,
+        publicationDate: paper.publicationDate || null,
+        year: paper.year || null,
+      })),
+    };
+
+    const fastapiResponse = await axios.post(
+      `${FASTAPI_URL}/hybrid-recommend-papers`,
+      hybridRequest
+    );
+
+    const responseData = fastapiResponse.data;
+    const papersWithScores = papers.map((paper: any, index: number) => ({
+      ...paper,
+      score: responseData.similarities[index] || 0,
+      content_score: responseData.content_scores ? responseData.content_scores[index] || 0 : 0,
+      collaborative_score: responseData.collaborative_scores ? responseData.collaborative_scores[index] || 0 : 0,
+    }));
+
+    res.json({
+      data: papersWithScores.sort((a: any, b: any) => b.score - a.score),
+      total_papers: responseData.total_items,
+      user_interests: user.interests,
+      saved_papers_count: savedPapers.length,
+      followers_papers_count: followersPapers.length,
+      similar_users_papers_count: similarUsersPapers.length,
+      message: "Hybrid recommendations combining content-based and collaborative filtering.",
+    });
+  } catch (error) {
+    console.error("Error fetching hybrid recommendations:", error);
+    await getPersonalizedRecommendations(req, res);
+  }
+};
+
 const getPersonalizedRecommendations = async (req: any, res: any) => {
   if (!req.session || !req.session.user) {
     return res.status(401).json({ error: "User not authenticated." });
@@ -78,7 +242,7 @@ const getPersonalizedRecommendations = async (req: any, res: any) => {
       params: {
         query: user.interests.join(" OR "),
         fields:
-          "title,fieldsOfStudy,abstract,url,openAccessPdf,publicationTypes,publicationDate",
+          "title,fieldsOfStudy,abstract,url,openAccessPdf,publicationTypes,publicationDate,year",
         limit: 50,
       },
     });
@@ -87,6 +251,10 @@ const getPersonalizedRecommendations = async (req: any, res: any) => {
     if (!papers || papers.length == 0) {
       return fetchBulkPapers(req, res);
     }
+
+    const savedPapers = await Paper.find({
+      _id: { $in: user.savedPapers }
+    });
 
     const fastapiRequest = {
       user_interests: user.interests,
@@ -97,7 +265,18 @@ const getPersonalizedRecommendations = async (req: any, res: any) => {
         abstract: paper.abstract || "",
         url: paper.url,
         openAccessPdf: paper.openAccessPdf,
-        // TODO: add more fields for more advanced recommender
+        publicationDate: paper.publicationDate || null,
+        year: paper.year || null,
+      })),
+      saved_papers: savedPapers.map((paper: any) => ({
+        paperId: paper.paperId,
+        title: paper.title,
+        fieldsOfStudy: paper.fieldsOfStudy || [],
+        abstract: paper.abstract || "",
+        url: paper.url,
+        openAccessPdf: paper.openAccessPdf,
+        publicationDate: paper.publicationDate || null,
+        year: paper.year || null,
       })),
     };
 
@@ -153,6 +332,11 @@ router.get("/recommendations", async (req: any, res: any) => {
 router.get("/personalized", async (req: any, res: any) => {
   await getPersonalizedRecommendations(req, res);
 });
+
+router.get("/hybrid", async (req: any, res: any) => {
+  await getHybridRecommendations(req, res);
+});
+
 
 router.post("/save", async (req: any, res: any) => {
   const {
