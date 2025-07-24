@@ -47,7 +47,7 @@ export default function PDFViewerPage() {
   return (
     <div className="h-screen">
       <div className="p-4 text-xl font-bold text-center">{paper.title}</div>
-      <PDFRenderer pdfUrl={`${FASTAPI_URL}/proxy-pdf?url=${encodeURIComponent(paper.openAccessPdf.url)}`} />
+      <PDFRenderer pdfUrl={`${FASTAPI_URL}/proxy-pdf?url=${encodeURIComponent(paper.openAccessPdf.url)}`} paperId={paper._id} />
     </div>
   );
 } 

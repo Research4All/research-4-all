@@ -58,6 +58,7 @@ export interface Annotation {
     nodeTagName: string;
   };
   _id?: string;
+  paperMongoId?: string;
   userId?: {
     _id: string;
     username: string;
@@ -79,4 +80,5 @@ export interface Highlight {
   };
   color?: string; // Optional color for different highlight types
   _id?: string;
+  paperMongoId?: string;
 }
