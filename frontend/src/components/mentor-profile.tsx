@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useParams } from "react-router";
-
-import type { Mentor } from "../types";
+import type { Mentor } from "@/types";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
@@ -10,6 +9,7 @@ export function MentorProfile() {
   const [profile, setProfile] = useState<Mentor | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [followLoading, setFollowLoading] = useState(false);
   const navigate = useNavigate();
   const { mentorId } = useParams();
 
@@ -51,6 +51,40 @@ export function MentorProfile() {
     }
   }, [mentorId]);
 
+  const handleFollowToggle = async () => {
+    if (!profile || followLoading) return;
+
+    try {
+      setFollowLoading(true);
+      const method = profile.isFollowing ? "DELETE" : "POST";
+      
+      const response = await fetch(`${BACKEND_URL}/api/users/follow/${mentorId}`, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        await response.json();
+        setProfile(prev => prev ? {
+          ...prev,
+          isFollowing: !prev.isFollowing,
+          followersCount: prev.isFollowing ? prev.followersCount - 1 : prev.followersCount + 1
+        } : null);
+      } else {
+        const errorData = await response.json();
+        setError(errorData.error || "Failed to update follow status");
+      }
+    } catch (error) {
+      console.error("Error updating follow status:", error);
+      setError("Failed to update follow status. Please try again later.");
+    } finally {
+      setFollowLoading(false);
+    }
+  };
+
   const handleContactMentor = () => {
     navigate(`/messages?mentor=${mentorId}`);
   };
@@ -91,7 +125,7 @@ export function MentorProfile() {
           <h1 className="text-3xl font-bold">{profile.username}</h1>
           <p className="text-muted-foreground">Mentor Profile</p>
         </div>
-
+        
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Contact Information</h2>
           <div className="space-y-4">
@@ -131,7 +165,59 @@ export function MentorProfile() {
           </div>
         </div>
 
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Following ({profile.followingCount})</h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {profile.following && profile.following.length > 0 ? (
+                profile.following.map((user) => (
+                  <div key={user._id} className="flex items-center p-2 bg-gray-50 rounded-md">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
+                      {user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">{user.username}</div>
+                      <div className="text-xs text-gray-600">{user.role}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">Not following anyone yet</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Followers ({profile.followersCount})</h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {profile.followers && profile.followers.length > 0 ? (
+                profile.followers.map((user) => (
+                  <div key={user._id} className="flex items-center p-2 bg-gray-50 rounded-md">
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
+                      {user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">{user.username}</div>
+                      <div className="text-xs text-gray-600">{user.role}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">No followers yet</p>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="flex justify-center gap-4">
+          <Button
+            onClick={handleFollowToggle}
+            disabled={followLoading}
+            variant={profile.isFollowing ? "outline" : "default"}
+            className="cursor-pointer px-8 py-2 w-24"
+          >
+            {followLoading ? "..." : profile.isFollowing ? "Unfollow" : "Follow"}
+          </Button>
           <Button
             onClick={handleContactMentor}
             className="cursor-pointer px-8 py-2 bg-blue-500 hover:bg-blue-600"

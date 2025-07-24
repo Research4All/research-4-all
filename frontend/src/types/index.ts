@@ -24,6 +24,11 @@ export interface User {
   email: string;
   role: "Student" | "Mentor";
   interests: string[];
+  following?: User[];
+  followers?: User[];
+  followingCount?: number;
+  followersCount?: number;
+  isFollowing?: boolean;
 }
 
 export interface Mentor extends User {

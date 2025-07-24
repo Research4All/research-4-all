@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router";
-import type { User } from "../types";
+import type { User } from "@/types";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
@@ -11,25 +11,29 @@ export function ProfileDisplay() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch(`${BACKEND_URL}/api/users/profile`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    })
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.error) {
-          setError(data.error);
-        } else {
+    const fetchProfile = async () => {
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+
+        if (response.ok) {
+          const data = await response.json();
           setProfile(data);
+        } else {
+          setError("Failed to fetch profile");
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error("Error fetching profile:", error);
         setError("Failed to fetch profile. Please try again later.");
-      });
+      }
+    };
+
+    fetchProfile();
   }, [navigate]);
 
   if (error) {
@@ -56,6 +60,50 @@ export function ProfileDisplay() {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold">Profile</h1>
           <p className="text-muted-foreground">Your account details</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Following ({profile.followingCount || 0})</h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {profile.following && profile.following.length > 0 ? (
+                profile.following.map((user) => (
+                  <div key={user._id} className="flex items-center p-2 bg-gray-50 rounded-md">
+                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
+                      {user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">{user.username}</div>
+                      <div className="text-xs text-gray-600">{user.role}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">Not following anyone yet</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <h3 className="text-lg font-semibold mb-3">Followers ({profile.followersCount || 0})</h3>
+            <div className="space-y-2 max-h-40 overflow-y-auto">
+              {profile.followers && profile.followers.length > 0 ? (
+                profile.followers.map((user) => (
+                  <div key={user._id} className="flex items-center p-2 bg-gray-50 rounded-md">
+                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-semibold mr-3">
+                      {user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="font-medium text-sm">{user.username}</div>
+                      <div className="text-xs text-gray-600">{user.role}</div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-gray-500 text-sm">No followers yet</p>
+              )}
+            </div>
+          </div>
         </div>
 
         <div className="mb-8">

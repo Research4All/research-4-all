@@ -1,5 +1,4 @@
-import { Schema, model, Document } from "mongoose";
-import { ObjectId } from "mongodb";
+import { Schema, model, Document, Types } from "mongoose";
 
 export interface IUser extends Document {
   username: string;
@@ -7,11 +6,12 @@ export interface IUser extends Document {
   encryptedPassword: string;
   role: "Student" | "Mentor";
   interests: string[];
-  likedPapers: ObjectId[];
-  dislikedPapers: ObjectId[];
-  savedPapers: ObjectId[];
+  likedPapers: Types.ObjectId[];
+  dislikedPapers: Types.ObjectId[];
+  savedPapers: Types.ObjectId[];
   onboardingComplete: boolean;
-  // savedMentors: ?
+  following: Types.ObjectId[];
+  followers: Types.ObjectId[];
 }
 
 const userSchema = new Schema<IUser>(
@@ -41,7 +41,8 @@ const userSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
-    // savedMentors: { type: ?, ref: 'User' } // Uncomment when User model is implemented
+    following: [{ type: Types.ObjectId, ref: "User", default: [] }],
+    followers: [{ type: Types.ObjectId, ref: "User", default: [] }],
   },
   {
     timestamps: true,
