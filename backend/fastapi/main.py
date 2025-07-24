@@ -67,19 +67,10 @@ def calculate_recency_score(publication_year: Optional[int], max_boost: float = 
     
     current_year = datetime.now().year
     years_old = current_year - publication_year
-    
-    if years_old <= 0:
-        return max_boost
-    elif years_old <= 1:
-        return max_boost * 0.8
-    elif years_old <= 2:
-        return max_boost * 0.6
-    elif years_old <= 3:
-        return max_boost * 0.4
-    elif years_old <= 5:
-        return max_boost * 0.2
+    if years_old < 0:
+        return max_boost 
     else:
-        return 0.0
+        return max(0, max_boost * (5 - years_old) * 0.2)
 
 def calculate_content_based_scores(user_interests: List[str], papers: List[Paper], saved_papers: List[Paper] = None) -> List[float]:
     """Calculate content-based filtering scores using user interests and saved papers."""
@@ -210,15 +201,20 @@ async def hybrid_recommend_papers(request: HybridRecommendationRequest):
     has_followers_data = len(request.followers_saved_papers) > 0
     has_similar_users_data = len(request.similar_users_saved_papers) > 0
     
+    # Weights are somewhat arbitrary, but aim to balance content and collaborative scores based on available data
+    # users with saved papers and followers or similar users get a balanced hybrid score
     if has_saved_papers and (has_followers_data or has_similar_users_data):
         content_weight = 0.6
         collaborative_weight = 0.4
+    # users with saved papers only get a higher content weight
     elif has_saved_papers:
         content_weight = 0.8
         collaborative_weight = 0.2
+    # users with followers or similar users data get a higher collaborative weight
     elif has_followers_data or has_similar_users_data:
         content_weight = 0.3
         collaborative_weight = 0.7
+    # users without saved papers or followers data get a balanced score
     else:
         content_weight = 1.0
         collaborative_weight = 0.0
