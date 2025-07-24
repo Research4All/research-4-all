@@ -17,7 +17,6 @@ const PDFRenderer = ({ pdfUrl, paperId }: PDFRendererProps) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const annotateMenuRef = useRef<AnnotateMenuRef>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const handleDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -29,7 +28,6 @@ const PDFRenderer = ({ pdfUrl, paperId }: PDFRendererProps) => {
   // TODO: Use a logger for better error handling
   const handleDocumentLoadError = (error: Error) => {
     console.error("PDF Load Error:", error);
-    setError(`Failed to load PDF: ${error.message}`);
 
     // Debug: Check what the proxy is actually returning
     fetch(pdfUrl)
