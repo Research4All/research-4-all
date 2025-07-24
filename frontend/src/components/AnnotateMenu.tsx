@@ -73,7 +73,7 @@ export interface AnnotateMenuRef {
   handleTextLayerReady: () => void;
 }
 
-const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((props, ref) => {
+const AnnotateMenu = forwardRef<AnnotateMenuRef, object>((_, ref) => {
   const [selection, setSelection] = useState<string>();
   const [position, setPosition] = useState<Record<string, number>>();
   const [range, setRange] = useState<Range>();
