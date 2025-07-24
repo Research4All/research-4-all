@@ -10,13 +10,13 @@ pdfjs.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 interface PDFRendererProps {
   pdfUrl: string;
+  paperId?: string;
 }
 
-const PDFRenderer = ({ pdfUrl }: PDFRendererProps) => {
+const PDFRenderer = ({ pdfUrl, paperId }: PDFRendererProps) => {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [currentPage, setCurrentPage] = useState<number>(1);
   const annotateMenuRef = useRef<AnnotateMenuRef>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const handleDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
@@ -28,7 +28,6 @@ const PDFRenderer = ({ pdfUrl }: PDFRendererProps) => {
   // TODO: Use a logger for better error handling
   const handleDocumentLoadError = (error: Error) => {
     console.error("PDF Load Error:", error);
-    setError(`Failed to load PDF: ${error.message}`);
 
     // Debug: Check what the proxy is actually returning
     fetch(pdfUrl)
@@ -53,7 +52,7 @@ const PDFRenderer = ({ pdfUrl }: PDFRendererProps) => {
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      <AnnotateMenu ref={annotateMenuRef} />
+      <AnnotateMenu ref={annotateMenuRef} paperId={paperId} />
       <div className="flex-1 flex justify-center overflow-auto py-8">
         <div className="bg-white shadow-lg overflow-auto">
           <Document
