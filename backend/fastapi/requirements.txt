@@ -1,5 +1,11 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-scikit-learn==1.3.2
-pydantic==2.5.0
-httpx==0.25.2
+fastapi
+uvicorn[standard]
+scikit-learn
+pydantic
+httpx
+llama-cpp-python
+mcp
+nest-asyncio
+python-dotenv
+pymongo
+arxiv
