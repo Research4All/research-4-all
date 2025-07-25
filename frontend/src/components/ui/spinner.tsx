@@ -1,5 +1,4 @@
 // Majority of code comes from shadcn component
-import React from 'react';
 import { cn } from '@/lib/utils';
 
 interface SpinnerProps {
