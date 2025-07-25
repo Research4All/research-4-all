@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, useParams } from "react-router";
+import { Spinner } from "@/components/ui/spinner";
 import type { Mentor } from "@/types";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
@@ -94,7 +95,7 @@ export function MentorProfile() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center p-4">
-        <div className="text-lg">Loading mentor profile...</div>
+        <Spinner size="lg" text="Loading mentor profile..." showText />
       </div>
     );
   }

@@ -3,6 +3,7 @@ import { Document, Page } from "react-pdf";
 import { pdfjs } from "react-pdf";
 import { AnnotateMenu } from "./AnnotateMenu";
 import type { AnnotateMenuRef } from "./AnnotateMenu";
+import { Spinner } from "@/components/ui/spinner";
 
 
 import pdfjsWorker from "pdfjs-dist/build/pdf.worker?url";
@@ -59,7 +60,11 @@ const PDFRenderer = ({ pdfUrl, paperId }: PDFRendererProps) => {
             file={pdfUrl}
             onLoadSuccess={handleDocumentLoadSuccess}
             onLoadError={handleDocumentLoadError}
-            loading={<div>Loading PDF...</div>}
+            loading={
+              <div className="flex justify-center items-center p-8">
+                <Spinner size="lg" text="Loading PDF..." showText />
+              </div>
+            }
             error={<div>Error loading PDF.</div>}
           >
             <Page

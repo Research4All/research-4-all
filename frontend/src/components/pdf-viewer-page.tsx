@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import { PDFRenderer } from "./PDFRenderer";
+import { Spinner } from "@/components/ui/spinner";
 import type { Paper } from "../types";
 
 const FASTAPI_URL = import.meta.env.VITE_FASTAPI_URL || "http://localhost:8000";
@@ -40,7 +41,13 @@ export default function PDFViewerPage() {
     if (paperId) fetchPaper();
   }, [paperId]);
 
-  if (loading) return <div className="p-8 text-center">Loading paper...</div>;
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spinner size="lg" text="Loading paper..." showText />
+      </div>
+    );
+  }
   if (error) return <div className="p-8 text-center text-red-500">{error}</div>;
   if (!paper || !paper.openAccessPdf?.url) return <div className="p-8 text-center">PDF not available for this paper.</div>;
 
