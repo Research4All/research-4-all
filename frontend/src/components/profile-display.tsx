@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { useNavigate } from "react-router";
 import type { User } from "@/types";
 
@@ -7,12 +8,15 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 export function ProfileDisplay() {
   const [profile, setProfile] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
+        setLoading(true);
+        setError(null);
         const response = await fetch(`${BACKEND_URL}/api/users/profile`, {
           method: "GET",
           headers: {
@@ -30,11 +34,21 @@ export function ProfileDisplay() {
       } catch (error) {
         console.error("Error fetching profile:", error);
         setError("Failed to fetch profile. Please try again later.");
+      } finally {
+        setLoading(false);
       }
     };
 
     fetchProfile();
   }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-4">
+        <Spinner size="lg" text="Loading profile..." showText />
+      </div>
+    );
+  }
 
   if (error) {
     return (

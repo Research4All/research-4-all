@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router";
+import { Spinner } from "@/components/ui/spinner";
 
 const INTEREST_OPTIONS = [
   "Computer Science",
@@ -35,6 +36,7 @@ export function Onboarding() {
   const [selectedRole, setSelectedRole] = useState<"Student" | "Mentor" | null>(
     null
   );
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
@@ -56,6 +58,8 @@ export function Onboarding() {
       return;
     }
     setError(null);
+    setIsLoading(true);
+    
     try {
       const response = await fetch(`${BACKEND_URL}/api/users/onboarding`, {
         method: "POST",
@@ -78,6 +82,8 @@ export function Onboarding() {
     } catch (error) {
       console.error("Error during onboarding:", error);
       setError("Network error. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -98,6 +104,7 @@ export function Onboarding() {
               variant={selectedRole === "Student" ? "default" : "outline"}
               onClick={() => setSelectedRole("Student")}
               className="flex-1"
+              disabled={isLoading}
             >
               Student
             </Button>
@@ -105,6 +112,7 @@ export function Onboarding() {
               variant={selectedRole === "Mentor" ? "default" : "outline"}
               onClick={() => setSelectedRole("Mentor")}
               className="flex-1"
+              disabled={isLoading}
             >
               Mentor
             </Button>
@@ -126,6 +134,7 @@ export function Onboarding() {
                   selectedInterests.includes(interest) ? "default" : "outline"
                 }
                 onClick={() => toggleInterest(interest)}
+                disabled={isLoading}
               >
                 {interest}
               </Button>
@@ -139,8 +148,19 @@ export function Onboarding() {
         )}
 
         <div className="flex justify-center">
-          <Button onClick={handleSubmit} className="cursor-pointer px-8 py-2">
-            Complete Setup
+          <Button 
+            onClick={handleSubmit} 
+            className="cursor-pointer px-8 py-2"
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Spinner size="sm" />
+                Setting up your profile...
+              </div>
+            ) : (
+              "Complete Setup"
+            )}
           </Button>
         </div>
       </div>

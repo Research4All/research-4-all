@@ -1,8 +1,10 @@
 // Majority of code comes from shadcn component
+import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Login1Props {
   heading?: string;
@@ -34,36 +36,43 @@ const Login1 = ({
   signupUrl = "/signup",
 }: Login1Props) => {
   const navigate = useNavigate();
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
 
-    // Handle form submission logic here
-    const loginUser = async () => {
-      try {
-        const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email,
-            password,
-          }),
-          credentials: "include",
-        });
-        const parsedResponse = await response.json();
-        if (response.ok) {
-          console.log("User logged in successfully:", parsedResponse);
-          navigate("/");
-        }
-      } catch (error) {
-        console.error("Error logging in user:", error);
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+        credentials: "include",
+      });
+      const parsedResponse = await response.json();
+      if (response.ok) {
+        console.log("User logged in successfully:", parsedResponse);
+        navigate("/");
+      } else {
+        setError(parsedResponse.error || "Login failed. Please try again.");
       }
-    };
-    loginUser();
+    } catch (error) {
+      console.error("Error logging in user:", error);
+      setError("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
   return (
     <section className="h-screen bg-muted">
@@ -104,11 +113,21 @@ const Login1 = ({
                   className="bg-white"
                 />
               </div>
+              {error && (
+                <div className="text-red-600 text-sm text-center">{error}</div>
+              )}
               <div className="flex flex-col gap-4">
-                <Button type="submit" className="cursor-pointer mt-2 w-full">
-                  {buttonText}
+                <Button type="submit" disabled={isLoading} className="cursor-pointer mt-2 w-full">
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Spinner size="sm" />
+                      Logging in...
+                    </div>
+                  ) : (
+                    buttonText
+                  )}
                 </Button>
-                <Button variant="outline" className="cursor-pointer w-full">
+                <Button variant="outline" disabled={isLoading} className="cursor-pointer w-full">
                   <FcGoogle className="mr-2 size-5" />
                   {googleText}
                 </Button>

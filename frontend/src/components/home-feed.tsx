@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { PaperGrid } from "./paper-grid";
 import { PaperSearchSort } from "./paper-search-sort";
 import { filterAndSortPapers } from "@/utils/paper-utils";
+import { Spinner } from "@/components/ui/spinner";
 import type { Paper } from "@/types";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
@@ -134,7 +135,11 @@ export function HomeFeed() {
   const filteredAndSortedPapers = filterAndSortPapers(papers, search, sortBy);
 
   if (loading) {
-    return <div className="flex justify-center items-center h-64">Loading recommendations...</div>;
+    return (
+      <div className="flex justify-center items-center h-64">
+        <Spinner size="lg" text="Loading recommendations..." showText />
+      </div>
+    );
   }
 
   if (error) {

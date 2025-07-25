@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Bookmark } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Spinner } from '@/components/ui/spinner';
 import type { Paper } from '@/types';
 
 interface PaperCardProps {
@@ -38,9 +39,13 @@ export function PaperCard({ paper, handleSavePaper, onOpenModal }: PaperCardProp
                   : 'text-gray-400 hover:text-blue-600'
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
             >
-              <Bookmark 
-                className={`w-5 h-5 ${paper.saved ? 'fill-current' : ''}`} 
-              />
+              {isLoading ? (
+                <Spinner size="sm" />
+              ) : (
+                <Bookmark 
+                  className={`w-5 h-5 ${paper.saved ? 'fill-current' : ''}`} 
+                />
+              )}
             </button>
           </TooltipTrigger>
           <TooltipContent>

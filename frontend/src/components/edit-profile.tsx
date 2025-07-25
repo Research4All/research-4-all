@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router";
+import { Spinner } from "@/components/ui/spinner";
 
 const INTEREST_OPTIONS = [
   "Computer Science",
@@ -35,10 +36,15 @@ export function EditProfile() {
   const [selectedRole, setSelectedRole] = useState<"Student" | "Mentor" | null>(
     null
   );
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
-  //   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+    
     fetch(`${BACKEND_URL}/api/users/profile`, {
       method: "GET",
       headers: {
@@ -53,6 +59,10 @@ export function EditProfile() {
       })
       .catch((error) => {
         console.error("Error fetching profile:", error);
+        setError("Failed to load profile data. Please try again.");
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   }, []);
 
@@ -65,6 +75,9 @@ export function EditProfile() {
   };
 
   const handleSave = () => {
+    setIsSaving(true);
+    setError(null);
+    
     fetch(`${BACKEND_URL}/api/users/profile`, {
       method: "PUT",
       headers: {
@@ -80,19 +93,39 @@ export function EditProfile() {
       .then((data) => {
         if (!data.error) {
           console.log("Interests saved successfully:", data);
+          navigate("/");
         } else {
           console.error("Error saving interests:", data.error);
+          setError(data.error || "Failed to save changes. Please try again.");
         }
       })
       .catch((error) => {
         console.error("Error saving interests:", error);
+        setError("An error occurred while saving. Please try again.");
+      })
+      .finally(() => {
+        setIsSaving(false);
       });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center p-4">
+        <Spinner size="lg" text="Loading profile..." showText />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center p-4">
       <div className="w-full bg-white rounded-lg shadow-md p-8">
         <h1 className="font-bold mb-4 text-center">Edit Profile</h1>
+
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+            <p className="text-red-600 text-sm">{error}</p>
+          </div>
+        )}
 
         <div className="mb-8">
           <h2 className="text-xl font-semibold mb-4">Role</h2>
@@ -101,6 +134,7 @@ export function EditProfile() {
               variant={selectedRole === "Student" ? "default" : "outline"}
               onClick={() => setSelectedRole("Student")}
               className="flex-1"
+              disabled={isSaving}
             >
               Student
             </Button>
@@ -108,6 +142,7 @@ export function EditProfile() {
               variant={selectedRole === "Mentor" ? "default" : "outline"}
               onClick={() => setSelectedRole("Mentor")}
               className="flex-1"
+              disabled={isSaving}
             >
               Mentor
             </Button>
@@ -131,6 +166,7 @@ export function EditProfile() {
                   selectedInterests.includes(interest) ? "secondary" : "outline"
                 }
                 onClick={() => toggleInterest(interest)}
+                disabled={isSaving}
               >
                 {interest}
               </Button>
@@ -140,18 +176,27 @@ export function EditProfile() {
 
         <div className="flex gap-4 justify-center">
           <Button
-            className="cursor-pointer px=8 py-2"
+            className="cursor-pointer px-8 py-2"
             type="button"
             variant="default"
             onClick={handleSave}
+            disabled={isSaving}
           >
-            Save Changes
+            {isSaving ? (
+              <div className="flex items-center gap-2">
+                <Spinner size="sm" />
+                Saving...
+              </div>
+            ) : (
+              "Save Changes"
+            )}
           </Button>
           <Button
             className="cursor-pointer px-8 py-2"
             type="button"
             variant="outline"
             onClick={() => navigate("/")}
+            disabled={isSaving}
           >
             Cancel
           </Button>
