@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Spinner } from '@/components/ui/spinner';
 import type { Mentor } from '@/types';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
@@ -66,7 +67,11 @@ export function MentorCard({ mentor, onMentorClick, onFollowUpdate }: MentorCard
           size="sm"
           className="ml-2 w-20"
         >
-          {followLoading ? "..." : mentor.isFollowing ? "Unfollow" : "Follow"}
+          {followLoading ? (
+            <Spinner size="sm" />
+          ) : (
+            mentor.isFollowing ? "Unfollow" : "Follow"
+          )}
         </Button>
       </div>
 

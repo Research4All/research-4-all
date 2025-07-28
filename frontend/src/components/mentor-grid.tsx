@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router';
 import { Button } from '@/components/ui/button';
 import { GenericGrid } from './generic-grid';
 import { MentorCard } from './mentor-card';
+import { Spinner } from '@/components/ui/spinner';
 import type { Mentor } from '@/types';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
@@ -114,7 +115,7 @@ export function MentorGrid() {
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
-        <div className="text-lg">Loading mentors...</div>
+        <Spinner size="lg" text="Loading mentors..." showText />
       </div>
     );
   }

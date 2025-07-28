@@ -1,5 +1,6 @@
 import { Navigate, Outlet } from "react-router";
 import { useEffect, useState } from "react";
+import { Spinner } from "@/components/ui/spinner";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
@@ -19,7 +20,13 @@ const PrivateRoutes = () => {
     }
   }, []);
 
-  if (auth == null) return <div>Loading...</div>; // or a spinner/loading component
+  if (auth == null) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <Spinner size="lg" text="Checking authentication..." showText />
+      </div>
+    );
+  }
 
   return auth ? <Outlet /> : <Navigate to="/login" />;
 };

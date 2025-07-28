@@ -1,9 +1,11 @@
 // Majority of code comes from shadcn component
+import { useState } from "react";
 import { FcGoogle } from "react-icons/fc";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNavigate } from "react-router";
 import { useCallback } from "react";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Signup1Props {
   heading?: string;
@@ -35,43 +37,50 @@ const Signup1 = ({
   loginUrl = "/login",
 }: Signup1Props) => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   const handleSubmit = useCallback(
-    (event: React.FormEvent<HTMLFormElement>) => {
+    async (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       const formData = new FormData(event.currentTarget);
       const username = formData.get("username") as string;
       const email = formData.get("email") as string;
       const password = formData.get("password") as string;
 
-      // Handle form submission logic here
-      const registerUser = async () => {
-        try {
-          const response = await fetch(
-            `${BACKEND_URL}/api/auth/register`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                username,
-                email,
-                password,
-              }),
-              credentials: "include",
-            }
-          );
-          const parsedResponse = await response.json();
+      setIsLoading(true);
+      setError(null);
 
-          if (response.ok) {
-            console.log("User registered successfully:", parsedResponse);
-            navigate("/onboarding");
+      try {
+        const response = await fetch(
+          `${BACKEND_URL}/api/auth/register`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              username,
+              email,
+              password,
+            }),
+            credentials: "include",
           }
-        } catch (error) {
-          console.error("Error registering user:", error);
+        );
+        const parsedResponse = await response.json();
+
+        if (response.ok) {
+          console.log("User registered successfully:", parsedResponse);
+          navigate("/onboarding");
+        } else {
+          setError(parsedResponse.error || "Registration failed. Please try again.");
         }
-      };
-      registerUser();
+      } catch (error) {
+        console.error("Error registering user:", error);
+        setError("An error occurred. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
     }, [navigate]
   );
   return (
@@ -122,11 +131,21 @@ const Signup1 = ({
                   className="bg-white"
                 />
               </div>
+              {error && (
+                <div className="text-red-600 text-sm text-center">{error}</div>
+              )}
               <div className="flex flex-col gap-4">
-                <Button type="submit" className="cursor-pointer mt-2 w-full">
-                  {signupText}
+                <Button type="submit" disabled={isLoading} className="cursor-pointer mt-2 w-full">
+                  {isLoading ? (
+                    <div className="flex items-center gap-2">
+                      <Spinner size="sm" />
+                      Creating account...
+                    </div>
+                  ) : (
+                    signupText
+                  )}
                 </Button>
-                <Button variant="outline" className="cursor-pointer w-full">
+                <Button variant="outline" disabled={isLoading} className="cursor-pointer w-full">
                   <FcGoogle className="mr-2 size-5" />
                   {googleText}
                 </Button>
