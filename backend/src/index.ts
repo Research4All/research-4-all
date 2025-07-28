@@ -28,9 +28,28 @@ import type { IAnnotation } from "./models/Annotation";
 import type { IHighlight } from "./models/Highlight";
 
 const app: Application = express();
+
+if (process.env.RENDER) {
+  app.set('trust proxy', 1);
+}
+
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:3000", 
+  "https://research-4-all.vercel.app"
+];
+
 app.use(
   cors({
-    origin: FRONTEND_URL,
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      
+      if (allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   })
 );
@@ -46,10 +65,13 @@ let sessionConfig = {
   cookie: {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     secure: process.env.RENDER ? true : false,
-    httpOnly: true, // look into this more later
+    httpOnly: true,
+    sameSite: process.env.RENDER ? 'none' : 'lax', // Required for cross-domain cookies
+    path: '/',
   },
   resave: false,
   saveUninitialized: false,
+  proxy: process.env.RENDER ? true : false,
 };
 
 const authMiddleware = (req: any, res: Response, next: any) => {
@@ -84,7 +106,7 @@ const httpServer = createServer(app);
 
 const io = new SocketIOServer(httpServer, {
   cors: {
-    origin: FRONTEND_URL,
+    origin: allowedOrigins,
     credentials: true,
   },
 });

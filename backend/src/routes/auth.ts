@@ -70,6 +70,10 @@ router.post("/logout", (req: any, res: any) => {
 
 router.get("/status", (req: any, res: any) => {
   try {
+    console.log("Session ID:", req.sessionID);
+    console.log("Session data:", req.session);
+    console.log("Cookies:", req.headers.cookie);
+    
     if (req.session && req.session.user) {
       return res.json({ authenticated: true, user: req.session.user });
     } else {
