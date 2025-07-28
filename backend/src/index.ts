@@ -66,7 +66,7 @@ let sessionConfig = {
     maxAge: 1000 * 60 * 60 * 24, // 1 day
     secure: process.env.RENDER ? true : false,
     httpOnly: true,
-    sameSite: process.env.RENDER ? 'none' : 'lax', // Required for cross-domain cookies
+    sameSite: process.env.RENDER ? 'none' as const : 'lax' as const, // Required for cross-domain cookies
     path: '/',
   },
   resave: false,
