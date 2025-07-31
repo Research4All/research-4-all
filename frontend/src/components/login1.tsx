@@ -106,9 +106,11 @@ const Login1 = ({
               </div>
               <div className="flex flex-col gap-2">
                 <Input
-                  type="text"
+                  type="password"
                   name="password"
                   placeholder="Password"
+                  minLength={8}
+                  autoComplete="current-password"
                   required
                   className="bg-white"
                 />
