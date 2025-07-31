@@ -1,8 +1,6 @@
 // Majority of code comes from shadcn component
 import {
-  Calendar,
   Home,
-  MessageCircleMore,
   Search,
   FileText,
   Settings,
@@ -32,16 +30,6 @@ const items = [
     title: "Home",
     url: "",
     icon: Home,
-  },
-  {
-    title: "Messages",
-    url: "/messages",
-    icon: MessageCircleMore,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
   },
   {
     title: "Papers",
