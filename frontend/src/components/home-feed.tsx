@@ -153,6 +153,7 @@ export function HomeFeed() {
               setSearch={setSearch}
               sortBy={sortBy}
               setSortBy={setSortBy}
+              showScoreSort={papers.length > 0 && papers[0].score !== undefined}
             />
             <PaperGrid papers={filteredAndSortedPapers} handleSavePaper={handleSavePaper} itemsPerPage={12} showLoadMore={true} />
           </>
@@ -175,6 +176,7 @@ export function HomeFeed() {
         setSearch={setSearch}
         sortBy={sortBy}
         setSortBy={setSortBy}
+        showScoreSort={papers.length > 0 && papers[0].score !== undefined}
       />
 
       <PaperGrid papers={filteredAndSortedPapers} handleSavePaper={handleSavePaper} itemsPerPage={12} showLoadMore={true} />

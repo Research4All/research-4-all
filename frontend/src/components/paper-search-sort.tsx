@@ -32,7 +32,7 @@ export function PaperSearchSort({
       />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="outline"> Sort by: {sortBy} </Button>
+          <Button variant="outline" className="min-w-[150px]"> Sort by: {sortBy} </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           <DropdownMenuRadioGroup value={sortBy} onValueChange={setSortBy}>
