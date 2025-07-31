@@ -22,8 +22,6 @@ export default function App() {
       <Route path="/signup" element={<Signup1 heading="Create an account" />} />
       <Route path="/login" element={<Login1 heading="Welcome back" />} />
       <Route path="/onboarding" element={<Onboarding />} />
-      <Route path="/pdf" element={<PDFRenderer pdfUrl={`${FASTAPI_URL}/proxy-pdf?url=https://arxiv.org/pdf/2106.14834.pdf`} />} />
-      <Route path="/pdf-viewer/:paperId" element={<PDFViewerPage />} />
       <Route element={<PrivateRoutes />}>
         <Route element={<Layout />}>
           <Route path="/" element={<HomeFeed />} />
@@ -32,6 +30,7 @@ export default function App() {
           <Route path="/edit-profile" element={<EditProfile />} />
           <Route path="/mentors" element={<MentorsPage />} />
           <Route path="/mentor-profile/:mentorId" element={<MentorProfile />} />
+          <Route path="/pdf-viewer/:paperId" element={<PDFViewerPage />} />
         </Route>
       </Route>
     </Routes>
