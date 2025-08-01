@@ -9,12 +9,9 @@ import Layout from "./layout";
 import { HomeFeed } from "./components/home-feed";
 import { UserPapers } from "./components/user-papers";
 import { Onboarding } from "./components/onboarding";
-import { PDFRenderer } from "./components/PDFRenderer";
 import PDFViewerPage from "./components/pdf-viewer-page";
 import { MentorsPage } from "./components/mentors-page";
 import { MentorProfile } from "./components/mentor-profile";
-
-const FASTAPI_URL = import.meta.env.VITE_FASTAPI_URL || "http://localhost:8000";
 
 export default function App() {
   return (
