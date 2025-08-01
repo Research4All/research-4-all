@@ -1,4 +1,4 @@
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppSidebar } from "@/components/app-sidebar";
 import { Outlet } from "react-router";
@@ -8,10 +8,10 @@ export default function Layout({ children }: { children?: React.ReactNode }) {
     <TooltipProvider>
       <SidebarProvider>
         <AppSidebar />
-        <main>
+        <SidebarInset>
           <SidebarTrigger />
           <Outlet /> {children}
-        </main>
+        </SidebarInset>
       </SidebarProvider>
     </TooltipProvider>
   );

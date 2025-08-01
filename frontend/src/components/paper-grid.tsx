@@ -49,7 +49,7 @@ export function PaperGrid({ papers, handleSavePaper, itemsPerPage = 12, showLoad
       />
 
       {showModal && selectedPaper?.openAccessPdf?.url && (
-        <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 backdrop-filter backdrop-brightness-75 backdrop-blur-md flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-6xl h-5/6 flex flex-col">
             <div className="flex justify-between items-center p-4 border-b">
               <h2 className="text-xl font-semibold truncate pr-4">
@@ -72,7 +72,7 @@ export function PaperGrid({ papers, handleSavePaper, itemsPerPage = 12, showLoad
                   }}
                   className="cursor-pointer text-blue-500 hover:text-blue-700 text-base font-semibold border border-blue-500 rounded px-3 py-1 bg-white"
                 >
-                  Edit
+                  Annotate
                 </button>
                 <button
                   onClick={closeModal}

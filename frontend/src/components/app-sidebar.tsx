@@ -1,8 +1,6 @@
 // Majority of code comes from shadcn component
 import {
-  Calendar,
   Home,
-  MessageCircleMore,
   Search,
   FileText,
   Settings,
@@ -34,16 +32,6 @@ const items = [
     icon: Home,
   },
   {
-    title: "Messages",
-    url: "/messages",
-    icon: MessageCircleMore,
-  },
-  {
-    title: "Calendar",
-    url: "#",
-    icon: Calendar,
-  },
-  {
     title: "Papers",
     url: "papers",
     icon: FileText,
@@ -70,7 +58,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon">
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Application</SidebarGroupLabel>
+          <SidebarGroupLabel>Research4All</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
